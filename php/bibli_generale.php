@@ -311,3 +311,59 @@ function affLigneInput(string $libelle, array $attributs = array(), string $pref
     }
     echo '></td></tr>';
 }
+
+
+//___________________________________________________________________
+/**
+ * Chiffre et signe une valeur pour la passer dans une URL en utilisant l'algorithme AES-128 en mode GCM.
+ *
+ * @param string $val La valeur à chiffrer
+ * @return string La valeur chiffrée encodée URL
+ */
+function chiffrerSignerURL(string $val) : string {
+	$ivlen = openssl_cipher_iv_length($cipher='aes-128-gcm');
+	$iv = openssl_random_pseudo_bytes($ivlen);
+	// $tag (tag d'authentification)
+	// est une chaîne transmise par référence
+	$x = openssl_encrypt($val, $cipher, 
+						 base64_decode(CLE_CHIFFREMENT),
+	                     OPENSSL_RAW_DATA, $iv, $tag);
+	$x = $iv.$tag.$x;
+	$x = base64_encode($x);
+	return urlencode($x);
+}
+
+//___________________________________________________________________
+/**
+ * Déchiffre une valeur chiffrée avec la chiffrerSignerURL()
+ *
+ * @param string $x La valeur à déchiffrer
+ * @return string|false La valeur déchiffrée ou false si erreur
+ */
+function dechiffrerSignerURL(string $x) : string|false {
+	$x = base64_decode(urldecode($x)); // Décodage de la valeur encodée URL
+    $ivlen = openssl_cipher_iv_length($cipher='aes-128-gcm');
+    $iv = substr($x, 0, $ivlen);
+    $taglen = 16;
+    $tag = substr($x, $ivlen, $taglen);
+    $x = substr($x, $ivlen + $taglen);
+    return openssl_decrypt($x, $cipher, base64_decode(CLE_CHIFFREMENT), OPENSSL_RAW_DATA, $iv, $tag);
+}
+
+
+//_______________________________________________________________
+/**
+ * Conversion d'une date format AAAAMMJJHHMM au format mois AAAA
+ *
+ * @param  int      $date   la date à afficher.
+ *
+ * @return string           la chaîne qui représente la date
+ */
+function dateIntToStringL(int $date): string {
+    $mois = substr($date, -8, 2);
+    $annee = substr($date, 0, -8);
+
+    $months = getArrayMonths();
+
+    return $months[$mois - 1] . ' ' . $annee;
+}

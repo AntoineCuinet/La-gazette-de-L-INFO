@@ -16,7 +16,7 @@ $recherches = [];
 $results = [];
 
 if (isset($_POST['btnRecherche'])) {
-    $err = traitementRechercheL();
+    $err = traitementRechercheL($recherches, $results);
 } else {
     $err = false;
 }
@@ -44,30 +44,49 @@ ob_end_flush();
  * A false sinon
  * 
  *  @param array    $recherches    Tableaux contenant les caractères de la recherches
+ *  @param array    $results       Tableaux contenant les résultats de la recherches
  * 
  *  @return bool    un booléen à true si des erreurs sont détectées, false sinon
  */
-function traitementRechercheL(): bool {
-    // TODO: améliorer la regex
-    if (preg_match('/^[0-9a-zA-Z\' -]{3,255}$/u', $_POST['textRecherche'])) {
-        
+function traitementRechercheL(array &$recherches, array &$results): bool {
+    if (preg_match('/^(?=.*[^ ]{3})[0-9a-zA-Z\' -]{3,255}$/u', $_POST['textRecherche'])) {
+         
+        $recherches = explode(" ", $_POST['textRecherche']);
+        $tmp = [];
+        foreach ($recherches as $e) {
+            if (strlen($e) >= 3) {
+                $tmp[] = $e;
+            }
+        }
+        $recherches = $tmp;
 
-        // TODO: réussir à remplir le tab
-        // TODO: coucper le tab à chaque espace pour recherche 
-        $recherches[] = $_POST['textRecherche'];
+        // Chaîne vide pour stocker les conditions de recherche
+        $whereConditions = '';
+
+        // Boucle pour ajouter chaque recherche à la clause WHERE
+        foreach ($recherches as $recherche) {
+            $whereConditions .= '(arTitre LIKE "%' . $recherche . '%" OR arResume LIKE "%' . $recherche . '%") AND ';
+        }
+
+        // Supprimer le dernier "OR" de la chaîne
+        $whereConditions = rtrim($whereConditions, ' AND ');
+
 
         $bd = bdConnect();
-
         // Requête SQL pour récupérer les articles
-        $sql = 'SELECT arID, arTitre, arResume, arDatePubli
+        $sql = "SELECT arID, arTitre, arResume, arDatePubli
                 FROM article
-                ORDER BY arDatePubli DESC';
-                // TODO: ajouter la recherche de sous chaine (voir cours/TD)
+                WHERE $whereConditions
+                ORDER BY arDatePubli DESC";
+
         $result = bdSendRequest($bd, $sql);
 
         // Fermeture de la connexion au serveur de BdD
         mysqli_close($bd);
 
+        while ($row = mysqli_fetch_assoc($result)) {
+            $results[] = $row;
+        }
 
         return false;
     }
@@ -96,8 +115,12 @@ function affContenuL(bool $err, array $recherches, array $results): void {
         echo '<div class="erreur">Le ou les critères de recherche ne sont pas valides.</div>';
     } else if (isset($_POST['btnRecherche'])) {
         echo '<div class="succes">Critères de recherche utilisés : "';
-        foreach ($recherches as $e) {
+        $count = count($recherches); // Nombre total d'éléments dans le tableau
+        foreach ($recherches as $key => $e) {
             echo $e;
+            if ($key < $count - 1) { // Vérifie si ce n'est pas le dernier élément
+                echo ' '; // Ajoute un espace seulement si ce n'est pas le dernier élément
+            }
         }
         echo '".</div>';
     }
@@ -115,10 +138,24 @@ function affContenuL(bool $err, array $recherches, array $results): void {
         '<p>Aucun article ne correspond à vos critères de recherche.</p>';
         '</section>';
     } else {
-        // TODO: faire comme dans actus
-        foreach ($results as $res) {
+
+        // TODO: correction superposition des articles (test avec "lic")
+        // Créer un tableau associatif pour stocker les articles par mois
+        $articlesParMois = [];
+        foreach ($results as $article) {
+            $mois = dateIntToStringL($article['arDatePubli']);
+            $articlesParMois[$mois][] = $article;
+        }
+
+        // Parcourir les articles à afficher sur la page actuelle
+        foreach ($articlesParMois as $mois => $articlesDuMois) {
             echo '<section>',
-            '<h2>', $res['arTitre'], '</h2>',
+            '<h2>', $mois, '</h2>';
+            
+            // Parcourir les articles du mois
+            foreach ($articlesDuMois as $article) {
+                affUnArticle($article['arTitre'], $article['arID'], $article['arResume']);
+            }
             '</section>';
         }
     }

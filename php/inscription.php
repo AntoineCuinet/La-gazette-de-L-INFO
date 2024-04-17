@@ -319,6 +319,6 @@ function traitementInscriptionL(): array {
     $_SESSION['redacteur'] = false; // utile pour l'affichage de la barre de navigation
 
     // redirection vers la page compte.php
-    header('Location: compte.php');
+    header('Location: ../index.php');
     exit(); //===> Fin du script
 }

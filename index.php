@@ -83,9 +83,15 @@ function affContenuL() : void {
  */
 function affUnArticleL(int $id, string $titre) : void {
     $titre = htmlProtegerSorties($titre); // ATTENTION : à ne pas oublier !!!
+    $lien = './php/article.php';
+    // $lien .= '?id='.urlencode($id); // Encodage de l'id pour le passage dans l'URL (en théorie inutile ici car l'id est un entier, mais on ne sait jamais...)
+    
+    // TODO: chiffrer l'id pour le passage dans l'URL
+    // $id_chiffre = chiffrerSignerURL($id);
+    $id_chiffre = $id;
     echo
-            '<a href="./php/article.php?id=', $id, '">',
-                '<img src="upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '"><br>',
+            '<a href="', $lien, '?id=', $id_chiffre, '">',
+                '<img src="upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '" onerror="this.onerror=null; this.src=\'./images/none.jpg\';"><br>',
                 $titre,
             '</a>';
 }

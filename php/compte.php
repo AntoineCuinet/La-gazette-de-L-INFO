@@ -198,6 +198,7 @@ function affFormulaireModifMDPL(bool $err): void {
  * @return  array    Tableau contenant les erreurs rencontrées (si il y en a)
  */
 function traitementModifInfo(): array {
+    // TODO: traitement à faire
     return array();
 }
 
@@ -208,5 +209,6 @@ function traitementModifInfo(): array {
  * @return  bool    Booléen à true si une erreur est rencontrée, false sinon
  */
 function traitementModifMDP(): bool {
+    // TODO: traitement à faire
     return true;
 }

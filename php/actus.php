@@ -55,84 +55,65 @@ function affContenuL() : void {
     $totalPages = ceil($totalArticles / $articlesParPage);
     // Récupérer le numéro de page à afficher
     $pageCourante = isset($_GET['page']) ? $_GET['page'] : 1;
-    // Date qui sera affichée en titre d'une section
-    $dateAff = '';
-    // Tableau associatif pour classer par moi les articles
-    $articlesByMonth = array();
-
     // Afficher les articles récupérés
     affPagination($totalPages, $pageCourante);
 
 
+    // Calcul de l'index de début et de fin pour les articles à afficher sur la page actuelle
+    $indexDebut = ($pageCourante - 1) * $articlesParPage;
+    $indexFin = $indexDebut + $articlesParPage;
 
 
-
-
-
-    // Compteur pour les articles affichés
-    //$articleCount = 0;
-    $articleIndex = $pageCourante % $articlesParPage;
-    // Afficher les articles en fonction de la page actuelle
+    // Stockage de tous les articles dans un tableau
+    $articles = [];
     while ($tab = mysqli_fetch_assoc($result)) {
-        
-        //for($i = $pageCourante; $i <= $articleIndex; $i++) {
-            // $tab = mysqli_fetch_assoc($result);
-        // Calculer l'index de l'article dans la liste des articles
-        //$articleIndex = $articleCount % $articlesParPage;
-
-        // 
-        // $publicationDate = strtotime($tab['arDatePubli']);
-        // Clé du tableau basée sur l'année et le mois de publication de l'article
-        // $key = date('Y-m', $publicationDate);
-
-        // Récupérer la date de publication de l'article
-        $dateAff = dateIntToStringL($tab['arDatePubli']);
-
-        // Vérifier si l'article doit être affiché sur la page actuelle
-        //if ($articleIndex == ($pageCourante - 1)) {
-            // Stocker l'article dans le tableau associatif par mois
-        $articlesByMonth[$dateAff][] = $tab;
-        //}
-        //$articleCount++;
+        $articles[] = $tab;
     }
 
-    // $affStart = $articleIndex;
-    // $affEnd = $affStart + $articlesParPage;
+    // Créer un tableau associatif pour stocker les articles par mois
+    $articlesParMois = [];
+    foreach ($articles as $article) {
+        $mois = dateIntToStringL($article['arDatePubli']);
+        $articlesParMois[$mois][] = $article;
+    }
 
 
-    // Afficher les articles pour chaque mois
-    foreach ($articlesByMonth as $month => $articles) {
+    // Variable pour stocker le nombre d'articles déjà affichés
+    $articlesAffiches = 0;
+    // Tableau pour indiquer si un mois a déjà été affiché
+    // TODO: à faire
+    $sectionDejaAffiche = [];
+
+
+    // Parcourir les articles à afficher sur la page actuelle
+    foreach ($articlesParMois as $mois => $articlesDuMois) {
         echo '<section>',
-        '<h2>', $month, '</h2>';
+        '<h2>', $mois, '</h2>';
+        
+        // Parcourir les articles du mois
+        foreach ($articlesDuMois as $article) {
+            // Vérifier si l'index de l'article est compris entre l'index de début et de fin
+            if ($articlesAffiches >= $indexDebut && $articlesAffiches < $indexFin) {
+                affUnArticle($article['arTitre'], $article['arID'], $article['arResume']);
+            }
+            // Incrémenter le nombre d'articles affichés
+            $articlesAffiches++;
 
-        foreach ($articles as $article) {
-            affUnArticle($article['arTitre'], $article['arID'], $article['arResume']);
+            // Vérifier si le nombre d'articles affichés atteint 4 (fin de la page)
+            if ($articlesAffiches >= $indexFin) {
+                // Sortir de la boucle des articles du mois
+                break;
+            }
+        }
+
+        // Vérifier si le nombre d'articles affichés atteint 4 (fin de la page)
+        if ($articlesAffiches >= $indexFin) {
+            // Sortir de la boucle des mois
+            break;
         }
         echo '</section>';
     }
-
     echo '</main>';
-}
-
-
-
-//_______________________________________________________________
-/**
- * Affiche la pagination de la page
- *
- * @param  string   $titre     Le titre de l'article.
- * @param  int      $id        L'id de l'article.
- * @param  string   $resume    Le résumé de l'article.
- *
- * @return void
- */
-function affUnArticle(string $titre, int $id, string $resume): void {
-    echo '<article class="resume">',
-    '<img src="../upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '">',
-    '<h3>', $titre, '</h3>',
-    '<p>', $resume, '</p>',
-    '<footer><a href="../php/article.php?id=', $id, '">Lire l\'article</a></footer>',
-    '</article>';
 }
 
 
@@ -158,22 +139,4 @@ function affPagination(int $totalPages, int $pageCourante): void {
     }
     echo '</p>',
     '</section>';
-}
-
-
-//_______________________________________________________________
-/**
- * Conversion d'une date format AAAAMMJJHHMM au format mois AAAA
- *
- * @param  int      $date   la date à afficher.
- *
- * @return string           la chaîne qui représente la date
- */
-function dateIntToStringL(int $date): string {
-    $mois = substr($date, -8, 2);
-    $annee = substr($date, 0, -8);
-
-    $months = getArrayMonths();
-
-    return $months[$mois - 1] . ' ' . $annee;
 }

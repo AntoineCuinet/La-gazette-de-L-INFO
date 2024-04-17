@@ -629,12 +629,17 @@ input[type=submit]:hover, input[type=reset]:hover {
     border-radius: 10px;
     position: relative;
 }
+.auteurAr {
+    position: relative;
+}
 
-.auteurCom > form {
+.auteurCom > form,
+.auteurAr > form {
     display: none;
 }
 
-.auteurCom:hover > form {
+.auteurCom:hover > form,
+.auteurAr:hover > form {
     display: block;
     position: absolute;
     right: 5px;

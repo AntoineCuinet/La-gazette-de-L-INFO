@@ -33,6 +33,7 @@ ob_end_flush();
  * @return  void
  */
 function affContenuL() : void {
+
     if (! parametresControle('get', ['id'])){
         affErreurL('Il faut utiliser une URL de la forme : http://..../php/article.php?id=XXX');
         return; // ==> fin de la fonction
@@ -43,6 +44,9 @@ function affContenuL() : void {
         return; // ==> fin de la fonction
     }
 
+    // TODO: déchiphrer l'URL
+    // Déchiffrement de l'URL
+    // $id = dechiffrerSignerURL((int)$_GET['id']);
     $id = (int)$_GET['id'];
 
     if ($id <= 0){
@@ -88,6 +92,8 @@ function affContenuL() : void {
     // suppression d'un commentaire
     if (isset($_POST['btnSuprimerCommentaire'])) {
         // TODO: suppression du commentaire à faire
+        // $sqlDel = "DELETE FROM commentaire WHERE coID = '$idCom'";
+        // bdSendRequest($bd, $sqlDel);
     }
 
 
@@ -130,12 +136,13 @@ function affContenuL() : void {
 
     echo    '<article>',
                 '<h3>', $tab['arTitre'], '</h3>',
-                '<img src="../upload/', $tab['arID'], '.jpg" alt="Photo d\'illustration | ', $tab['arTitre'], '">',
+                '<img src="../upload/', $tab['arID'], '.jpg" alt="Photo d\'illustration | ', $tab['arTitre'], '" onerror="this.style.display=\'none\';">',
+                // TODO: langage de balisage ad hoc de type BBCode à faire
                 $tab['arTexte'],
                 '<footer>',
                     'Par <a href="redaction.php#', $tab['utPseudo'], '">', $auteur, '</a>. ',
-                    'Publié le ', dateIntToStringL($tab['arDatePubli']),
-                    isset($tab['arDateModif']) ? ', modifié le '. dateIntToStringL($tab['arDateModif']) : '',
+                    'Publié le ', dateIntToStringFootL($tab['arDatePubli']),
+                    isset($tab['arDateModif']) ? ', modifié le '. dateIntToStringFootL($tab['arDateModif']) : '',
                 '</footer>',
             '</article>';
 
@@ -155,11 +162,16 @@ function affContenuL() : void {
                 '<form method="post" action="article.php?id=', $_GET['id'], '">',
                 '<input type="submit" name="btnSuprimerCommentaire" value="Supprimer le commentaire">',
                 '</form>';
+            } else if (estAuthentifie() && $tab['arAuteur'] === $_SESSION['pseudo']) {
+                echo '<li class="auteurAr">',
+                '<form method="post" action="article.php?id=', $_GET['id'], '">',
+                '<input type="submit" name="btnSuprimerCommentaire" value="Supprimer le commentaire">',
+                '</form>';
             } else {
                 echo '<li>';
             }
             echo '<p>Commentaire de <strong>', htmlProtegerSorties($tab['coAuteur']),
-                        '</strong>, le ', dateIntToStringL($tab['coDate']),
+                        '</strong>, le ', dateIntToStringFootL($tab['coDate']),
                     '</p>',
                     '<blockquote>', htmlProtegerSorties($tab['coTexte']), '</blockquote>',
                 '</li>';
@@ -201,7 +213,7 @@ function affContenuL() : void {
  *
  * @return string           la chaîne qui représente la date
  */
-function dateIntToStringL(int $date) : string {
+function dateIntToStringFootL(int $date) : string {
     // les champs date (coDate, arDatePubli, arDateModif) sont de type BIGINT dans la base de données
     // donc pas besoin de les protéger avec htmlentities()
 

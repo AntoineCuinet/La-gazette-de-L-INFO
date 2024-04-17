@@ -33,6 +33,11 @@ define('AGE_MINIMUM', 18);
 
 define('LMIN_PASSWORD', 4);
 
+
+$i = base64_encode(openssl_random_pseudo_bytes(32));
+// Clé de chiffrement pour les urls (pour l'algorithme AES-128 en mode GCM)
+define('CLE_CHIFFREMENT', $i);
+
 //_______________________________________________________________
 /**
  * Affichage du début de la page HTML (head + menu + header).
@@ -148,3 +153,29 @@ function sessionExit(string $page = '../index.php'): void {
     exit();
 }
 
+
+//_______________________________________________________________
+/**
+ * Affiche la pagination de la page
+ *
+ * @param  string   $titre     Le titre de l'article.
+ * @param  int      $id        L'id de l'article.
+ * @param  string   $resume    Le résumé de l'article.
+ *
+ * @return void
+ */
+function affUnArticle(string $titre, int $id, string $resume): void {
+    $titre = htmlProtegerSorties($titre);
+    $resume = htmlProtegerSorties($resume);
+
+    // TODO: chiffrer l'id pour le passage dans l'URL
+    // $id_chiffre = chiffrerSignerURL($id);
+    $id_chiffre = $id;
+
+    echo '<article class="resume">',
+    '<img src="../upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '" onerror="this.onerror=null; this.src=\'../images/none.jpg\';">',
+    '<h3>', $titre, '</h3>',
+    '<p>', $resume, '</p>',
+    '<footer><a href="../php/article.php?id=', $id_chiffre, '">Lire l\'article</a></footer>',
+    '</article>';
+}

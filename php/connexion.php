@@ -119,12 +119,6 @@ function traitementConnexionL(): bool {
     $_POST['passe'] = trim($_POST['passe']);
 
 
-    // calcul du hash du mot de passe pour enregistrement dans la base.
-    // $passe = password_hash($_POST['passe'], PASSWORD_DEFAULT);
-
-    // var_dump($passe);
-
-
     // ouverture de la connexion à la base de données
     $bd = bdConnect();
 
@@ -137,6 +131,14 @@ function traitementConnexionL(): bool {
         $passe = $t['utPasse'];
         $redacteur = $t['utRedacteur'];
     }
+
+    // si $passe est vide --> retour (pas d'utilisateur avec ce pseudo)
+    if (empty($passe)) {
+        // fermeture de la connexion à la base de données
+        mysqli_close($bd);
+        $erreur = true;
+        return $erreur;   //===> FIN DE LA FONCTION
+    }
     
     // vérification du mot de passe
     if (! password_verify($_POST['passe'], $passe)) {
@@ -147,7 +149,7 @@ function traitementConnexionL(): bool {
     mysqli_free_result($res);
 
 
-    // si erreurs --> retour
+    // si erreur --> retour
     if ($erreur) {
         // fermeture de la connexion à la base de données
         mysqli_close($bd);
@@ -161,6 +163,7 @@ function traitementConnexionL(): bool {
     $_SESSION['pseudo'] = $pseudo;
     $_SESSION['redacteur'] = $redacteur; // utile pour l'affichage de la barre de navigation
 
+    // TODO: faire fonctionner HTTP_REFERER
     if (isset($_SERVER['HTTP_REFERER'])) {
         // Récupérer l'URL référente
         $referer = $_SERVER['HTTP_REFERER'];
