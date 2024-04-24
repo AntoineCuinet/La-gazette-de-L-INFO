@@ -134,11 +134,11 @@ function affContenuL() : void {
             '</section>';
         }
 
+    $html_article = bbcodeToHtml($tab['arTexte']);
     echo    '<article>',
                 '<h3>', $tab['arTitre'], '</h3>',
                 '<img src="../upload/', $tab['arID'], '.jpg" alt="Photo d\'illustration | ', $tab['arTitre'], '" onerror="this.style.display=\'none\';">',
-                // TODO: langage de balisage ad hoc de type BBCode à faire
-                $tab['arTexte'],
+                $html_article,
                 '<footer>',
                     'Par <a href="redaction.php#', $tab['utPseudo'], '">', $auteur, '</a>. ',
                     'Publié le ', dateIntToStringFootL($tab['arDatePubli']),
@@ -173,6 +173,7 @@ function affContenuL() : void {
             echo '<p>Commentaire de <strong>', htmlProtegerSorties($tab['coAuteur']),
                         '</strong>, le ', dateIntToStringFootL($tab['coDate']),
                     '</p>',
+                    // TODO: Seuls les codes BBCode permettant l'envoi de caractères unicode doivent être pris en compte dans les commentaires des articles.
                     '<blockquote>', htmlProtegerSorties($tab['coTexte']), '</blockquote>',
                 '</li>';
         }
@@ -264,3 +265,45 @@ function affErreurL(string $message) : void {
             '</section>',
         '</main>';
 }
+
+
+
+// TODO: aléliorer la finction
+function bbcodeToHtml($text) {
+    // Définir les règles de remplacement
+    $bbcode_rules = array(
+        '/\[p\](.*?)\[\/p\]/s' => '<p>$1</p>',
+        '/\[gras\](.*?)\[\/gras\]/s' => '<strong>$1</strong>',
+        '/\[it\](.*?)\[\/it\]/s' => '<em>$1</em>',
+        '/\[citation\](.*?)\[\/citation\]/s' => '<blockquote>$1</blockquote>',
+        '/\[liste\](.*?)\[\/liste\]/s' => '<ul>$1</ul>',
+        '/\[item\](.*?)\[\/item\]/s' => '<li>$1</li>',
+        '/\[a:(.*?)\](.*?)\[\/a\]/s' => '<a href="$1" target="_blank">$2</a>',
+        '/\[br\]/' => '<br>',
+        '/\[widget-deezer:(\d+):(\d+):(.*?)\]/' => '<iframe width="$1" height="$2" src="$3" allow="encrypted-media; clipboard-write"></iframe>',
+        '/\[widget-deezer:(\d+):(\d+):(.*?)( .*?)\]/' => '<iframe width="$1" height="$2" src="$3"$4 allow="encrypted-media; clipboard-write"></iframe>',
+        '/\[widget-deezer:(\d+):(\d+):(.*?) legende\](.*?)\[\/widget-deezer\]/' => '<figure><iframe width="$1" height="$2" src="$3" allow="encrypted-media; clipboard-write"></iframe><figcaption>$4</figcaption></figure>',
+        '/\[#(\d+)\]/' => '&#$1;',
+        '/\[#x([0-9a-fA-F]+)\]/' => '&#x$1;'
+    );
+
+    // Implémenter la fonction de traitement
+    foreach ($bbcode_rules as $pattern => $replacement) {
+        $text = preg_replace($pattern, $replacement, $text);
+    }
+
+    // Gestion des URLs pour les balises a et widget-deezer
+    $text = preg_replace_callback('/\[a:(.*?)\](.*?)\[\/a\]/s', function($matches) {
+        $url = $matches[1];
+        $content = $matches[2];
+        if (strpos($url, 'http') === 0) {
+            return '<a href="' . $url . '" target="_blank">' . $content . '</a>';
+        } else {
+            return '<a href="' . $url . '">' . $content . '</a>';
+        }
+    }, $text);
+
+    // Retourner le texte avec les balises BBCode remplacées par les balises HTML correspondantes
+    return $text;
+}
+
