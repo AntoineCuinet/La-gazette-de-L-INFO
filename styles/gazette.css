@@ -52,6 +52,10 @@ table {
         DEBUT DE LA FEUILLE DE STYLE POUR LE SITE
 ************************************************************************/
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: Trebuchet, arial, verdana, sans-serif;
     line-height: 1.2;
@@ -493,7 +497,7 @@ section > a:hover > img {
 }
 
 /****************************************************************
-        Formulaire d'inscription
+        Formulaires
 ****************************************************************/
 
 form input[type=text], form input[type=email], form input[type=password] {
@@ -507,6 +511,7 @@ form table {
 form table td {
     padding: 7px;
     width: 350px;
+    vertical-align: top;
 }
 
 form td:first-child:not(:only-child) {
@@ -650,19 +655,4 @@ input[type=submit]:hover, input[type=reset]:hover {
     text-align: left;
     margin: 20px 0;
     border-radius: 10px;
-}
-
-/****************************************************************
-        Nouveau
-****************************************************************/
-
-/* .nouveau {
-    text-align: center;
-    margin: 10px auto;
-} */
-
-
-
-.nouveau td {
-    vertical-align: top;
 }

@@ -1,4 +1,16 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                      La Gazette de L-INFO                   \\
+//                   Page d'accueil (index.php)                \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\       
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
+
+
 
 // chargement des bibliothèques de fonctions
 require_once('./php/bibli_gazette.php');
