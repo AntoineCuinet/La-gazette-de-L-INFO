@@ -1,39 +1,56 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                     La Gazette de L-INFO                    \\
+//            Page d'authentification (connexion.php)          \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
 
-// chargement des bibliothèques de fonctions
+
+
+// Chargement des bibliothèques de fonctions
 require_once('bibli_gazette.php');
 require_once('bibli_generale.php');
 
-// bufferisation des sorties
+// Bufferisation des sorties
 ob_start();
 
-// démarrage ou reprise de la session
+// Démarrage ou reprise de la session
 session_start();
 
-// si l'utilisateur est déjà authentifié
+// Si l'utilisateur est déjà authentifié, on le redirige vers la page d'accueil
 if (estAuthentifie()){
     header ('Location: ../index.php');
     exit();
 }
 
-if (isset($_POST['btnConnexion'])) {
-    $erreur = traitementConnexionL(); // ne revient pas quand les données soumises sont valides
+
+// Détermination de la page de destination
+if (isset($_POST['destinationURL'])) {
+    $destinationURL = $_POST['destinationURL'];
+} else if (empty($destinationURL)) {
+    $destinationURL = (isset($_SERVER['HTTP_REFERER'])) ? $_SERVER['HTTP_REFERER'] : '../index.php';
 }
-else{
+
+
+if (isset($_POST['btnConnexion'])) {
+    $erreur = traitementConnexionL();//$destinationURL);
+} else {
     $erreur = null;
 }
 
-
-
-// génération de la page
+// Génération de la page
 affEntete('Connexion');
 
-affFormulaireL($erreur);
+affFormulaireL($erreur);//, $destinationURL);
 
 affPiedDePage();
 
 ob_end_flush();
-
 
 
 /*********************************************************
@@ -48,7 +65,8 @@ ob_end_flush();
  * En absence de soumission (i.e. lors du premier affichage), $err est égal à null
  * Quand l'inscription échoue, $err est un booleen à true
  *
- * @param ?bool    $err    Booleen à true si il y a des erreurs, false sinon
+ * @param ?bool     $err               Booleen à true si il y a des erreurs, false sinon
+ * @param string    $destinationURL    URL de la page de destination
  *
  * @return void
  */
@@ -56,8 +74,7 @@ function affFormulaireL(?bool $err): void {
     // réaffichage des données soumises en cas d'erreur, sauf les mots de passe
     if (isset($_POST['btnConnexion'])){
         $values = htmlProtegerSorties($_POST);
-    }
-    else{
+    } else {
         $values['pseudo'] = '';
     }
 
@@ -82,6 +99,7 @@ function affFormulaireL(?bool $err): void {
     echo
                     '<tr>',
                         '<td colspan="2">',
+                            // '<input type="hidden" name="destinationURL" value="', $destinationURL, '">',
                             '<input type="submit" name="btnConnexion" value="Se connecter"> ',
                             '<input type="reset" value="Annuler">',
                         '</td>',
@@ -104,6 +122,8 @@ function affFormulaireL(?bool $err): void {
  * Sinon
  *     Connexion de l'utilisateur
  * FinSi
+ * 
+ * @param string    $destinationURL    URL de la page de destination
  *
  *  @return bool    un booleen à true si il y a des erreurs, false sinon
  */
@@ -163,14 +183,13 @@ function traitementConnexionL(): bool {
     $_SESSION['pseudo'] = $pseudo;
     $_SESSION['redacteur'] = $redacteur; // utile pour l'affichage de la barre de navigation
 
-    // TODO: faire fonctionner HTTP_REFERER
-    if (isset($_SERVER['HTTP_REFERER'])) {
-        // Récupérer l'URL référente
-        $referer = $_SERVER['HTTP_REFERER'];
+    
+    // TODO: redirection vers la page de destination à faire fonctionner
+    // if (! empty($destinationURL)) {
+    //     header('Location: '. $destinationURL);
+    //     exit(); //===> Fin du script
+    // }
 
-        header('Location: '. $referer);
-        exit(); //===> Fin du script
-    }
     header('Location: ../index.php');
     exit(); //===> Fin du script
 }

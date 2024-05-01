@@ -1,17 +1,28 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                     La Gazette de L-INFO                    \\
+//            Page du compte utilisateur (compte.php)          \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
 
-// chargement des bibliothèques de fonctions
+
+// Chargement des bibliothèques de fonctions
 require_once('./bibli_gazette.php');
 require_once('./bibli_generale.php');
 
-// bufferisation des sorties
+// Bufferisation des sorties
 ob_start();
 
-// démarrage ou reprise de la session
+// Démarrage ou reprise de la session
 session_start();
 
 
-// si l'utilisateur n'est pas authentifié, on le redirige sur la page index.php
+// Si l'utilisateur n'est pas authentifié, on le redirige sur la page d'acceuil (index.php)
 if (! estAuthentifie()){
     header('Location: ../index.php');
     exit;
@@ -39,7 +50,7 @@ echo '</main>';
 
 affPiedDePage();
 
-// envoi du buffer
+// Envoi du buffer
 ob_end_flush();
 
 

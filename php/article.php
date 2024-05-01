@@ -1,23 +1,35 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                     La Gazette de L-INFO                    \\
+//       Page de consultation d'un article (article.php)       \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
 
-// chargement des bibliothèques de fonctions
+
+
+// Chargement des bibliothèques de fonctions
 require_once('./bibli_gazette.php');
 require_once('./bibli_generale.php');
 
-// bufferisation des sorties
+// Bufferisation des sorties
 ob_start();
 
-// démarrage ou reprise de la session
+// Démarrage ou reprise de la session
 session_start();
 
 affEntete('Article');
 
-// génération du contenu de la page
+// Génération du contenu de la page
 affContenuL();
 
 affPiedDePage();
 
-// envoi du buffer
+// Envoi du buffer
 ob_end_flush();
 
 
@@ -32,31 +44,30 @@ ob_end_flush();
  *
  * @return  void
  */
-function affContenuL() : void {
+function affContenuL(): void {
 
     if (! parametresControle('get', ['id'])){
-        affErreurL('Il faut utiliser une URL de la forme : http://..../php/article.php?id=XXX');
+        affErreur('Il faut utiliser une URL de la forme : http://..../php/article.php?id=XXX');
         return; // ==> fin de la fonction
     }
 
-    if (! estEntier($_GET['id'])){
-        affErreurL('L\'identifiant doit être un entier');
-        return; // ==> fin de la fonction
-    }
-
-    // TODO: déchiphrer l'URL
     // Déchiffrement de l'URL
-    // $id = dechiffrerSignerURL((int)$_GET['id']);
-    $id = (int)$_GET['id'];
+    $id = dechiffrerSignerURL($_GET['id']);
+
+    if (! estEntier($id)){
+        affErreur('L\'identifiant doit être un entier');
+        return; // ==> fin de la fonction
+    }
 
     if ($id <= 0){
-        affErreurL('L\'identifiant doit être un entier strictement positif');
+        affErreur('L\'identifiant doit être un entier strictement positif');
         return; // ==> fin de la fonction
     }
 
 
     // ouverture de la connexion à la base de données
     $bd = bdConnect();
+
 
     // enregistrement d'un commentaire
     if (isset($_POST['btnAjoutCommentaire'])) {
@@ -75,6 +86,17 @@ function affContenuL() : void {
             bdSendRequest($bd, $sqlAdd);
         }
     }
+
+
+    // suppression d'un commentaire
+    if (isset($_POST['btnSuprimerCommentaire'])) {
+        $idCom = $_POST['commentaire_id'];
+
+        // Requête SQL pour supprimer le commentaire
+        $sqlDel = "DELETE FROM commentaire WHERE coID = '$idCom'";
+
+        bdSendRequest($bd, $sqlDel);
+    }
     
 
     // Récupération de l'article, des informations sur son auteur,
@@ -89,20 +111,12 @@ function affContenuL() : void {
     $result = bdSendRequest($bd, $sql);
 
 
-    // suppression d'un commentaire
-    if (isset($_POST['btnSuprimerCommentaire'])) {
-        // TODO: suppression du commentaire à faire
-        // $sqlDel = "DELETE FROM commentaire WHERE coID = '$idCom'";
-        // bdSendRequest($bd, $sqlDel);
-    }
-
-
     // Fermeture de la connexion au serveur de BdD, réalisée le plus tôt possible
     mysqli_close($bd);
 
     // pas d'articles --> fin de la fonction
     if (mysqli_num_rows($result) == 0) {
-        affErreurL('L\'identifiant de l\'article n\'a pas été trouvé dans la base de données');
+        affErreur('L\'identifiant de l\'article n\'a pas été trouvé dans la base de données');
         // Libération de la mémoire associée au résultat de la requête
         mysqli_free_result($result);
         return; // ==> fin de la fonction
@@ -124,85 +138,7 @@ function affContenuL() : void {
     $tab = htmlProtegerSorties($tab);
 
 
-    echo
-        '<main id="article">';
-
-        // Affichage du bandeau pour modifier/supprimer l'article si utilisateur est rédacteur
-        if (estAuthentifie() && $tab['utPseudo'] == $_SESSION['pseudo']) {
-            echo '<section class="modification-article">',
-            '<p>Vous êtes l\'auteur de cet article, <a href="./edition.php">cliquer ici pour le modifier</a>.</p>',
-            '</section>';
-        }
-
-    $html_article = bbcodeToHtml($tab['arTexte']);
-    echo    '<article>',
-                '<h3>', $tab['arTitre'], '</h3>',
-                '<img src="../upload/', $tab['arID'], '.jpg" alt="Photo d\'illustration | ', $tab['arTitre'], '" onerror="this.style.display=\'none\';">',
-                $html_article,
-                '<footer>',
-                    'Par <a href="redaction.php#', $tab['utPseudo'], '">', $auteur, '</a>. ',
-                    'Publié le ', dateIntToStringFootL($tab['arDatePubli']),
-                    isset($tab['arDateModif']) ? ', modifié le '. dateIntToStringFootL($tab['arDateModif']) : '',
-                '</footer>',
-            '</article>';
-
-    //pour accéder une seconde fois au premier enregistrement de la sélection
-    mysqli_data_seek($result, 0);
-
-    // Génération du début de la zone de commentaires
-    echo '<section>',
-            '<h2>Réactions</h2>';
-
-    // s'il existe des commentaires, on les affiche un par un.
-    if (isset($tab['coID'])) {
-        echo '<ul>';
-        while ($tab = mysqli_fetch_assoc($result)) {
-            if (estAuthentifie() && $tab['coAuteur'] === $_SESSION['pseudo']) {
-                echo '<li class="auteurCom">',
-                '<form method="post" action="article.php?id=', $_GET['id'], '">',
-                '<input type="submit" name="btnSuprimerCommentaire" value="Supprimer le commentaire">',
-                '</form>';
-            } else if (estAuthentifie() && $tab['arAuteur'] === $_SESSION['pseudo']) {
-                echo '<li class="auteurAr">',
-                '<form method="post" action="article.php?id=', $_GET['id'], '">',
-                '<input type="submit" name="btnSuprimerCommentaire" value="Supprimer le commentaire">',
-                '</form>';
-            } else {
-                echo '<li>';
-            }
-            echo '<p>Commentaire de <strong>', htmlProtegerSorties($tab['coAuteur']),
-                        '</strong>, le ', dateIntToStringFootL($tab['coDate']),
-                    '</p>',
-                    // TODO: Seuls les codes BBCode permettant l'envoi de caractères unicode doivent être pris en compte dans les commentaires des articles.
-                    '<blockquote>', htmlProtegerSorties($tab['coTexte']), '</blockquote>',
-                '</li>';
-        }
-        echo '</ul>';
-    }
-    // sinon on indique qu'il n'y a pas de commentaires
-    else {
-        echo '<p>Il n\'y a pas de commentaire pour cet article. </p>';
-    }
-
-    // Libération de la mémoire associée au résultat de la requête
-    mysqli_free_result($result);
-
-    if (! estAuthentifie()){
-        echo '<p>',
-                '<a href="./connexion.php">Connectez-vous</a> ou <a href="./inscription.php">inscrivez-vous</a> pour pouvoir commenter cet article !',
-            '</p>',
-            '</section>';
-    } else {
-        echo '<form method="post" action="article.php?id=', $_GET['id'], '" class="ajout-article">',
-        '<fieldset>',
-        '<legend>Ajoutez un commentaire</legend>',
-        '<textarea name="textCom" rows="18" cols="80"></textarea>',
-        '<input type="submit" name="btnAjoutCommentaire" value="Publier ce commentaire">',
-        '</fieldset>',
-        '</form>';
-    }
-
-    echo '</main>';
+    affContenuMainL($tab, $auteur, $id, $result);
 }
 
 
@@ -214,11 +150,11 @@ function affContenuL() : void {
  *
  * @return string           la chaîne qui représente la date
  */
-function dateIntToStringFootL(int $date) : string {
+function dateIntToStringFootL(int $date): string {
     // les champs date (coDate, arDatePubli, arDateModif) sont de type BIGINT dans la base de données
     // donc pas besoin de les protéger avec htmlentities()
 
-    // si un article a été publié avant l'an 1000, ça marche encore :-)
+    // si un article a été publié avant l'an 1000, ça marche encore ;)
     $minutes = substr($date, -2);
     $heure = (int)substr($date, -4, 2); //conversion en int pour supprimer le 0 de '07' pax exemple
     $jour = (int)substr($date, -6, 2);
@@ -240,37 +176,24 @@ function dateIntToStringFootL(int $date) : string {
  *
  * @return string           la chaîne résultat
  */
-function upperCaseFirstLetterLowerCaseRemainderL(string $str) : string {
+function upperCaseFirstLetterLowerCaseRemainderL(string $str): string {
     $str = mb_strtolower($str, encoding:'UTF-8');
     $fc = mb_strtoupper(mb_substr($str, 0, 1, encoding:'UTF-8'));
     return $fc.mb_substr($str, 1, mb_strlen($str), encoding:'UTF-8');
 }
 
 
+
 //_______________________________________________________________
 /**
- * Affichage d'un message d'erreur dans une zone dédiée de la page.
+ * Conversion des balises BBCode en balises HTML
  *
- * @param  string  $msg    le message d'erreur à afficher.
+ * @param  string  $text   le texte à convertir
  *
- * @return void
+ * @return string          le texte converti
  */
-function affErreurL(string $message) : void {
-    echo
-        '<main>',
-            '<section>',
-                '<h2>Oups, il y a eu une erreur...</h2>',
-                '<p>La page que vous avez demandée a terminé son exécution avec le message d\'erreur suivant :</p>',
-                '<blockquote>', $message, '</blockquote>',
-            '</section>',
-        '</main>';
-}
-
-
-
-// TODO: aléliorer la finction
-function bbcodeToHtml($text) {
-    // Définir les règles de remplacement
+function bbcodeToHtml(string $text): string {
+    // Définition des règles de remplacement
     $bbcode_rules = array(
         '/\[p\](.*?)\[\/p\]/s' => '<p>$1</p>',
         '/\[gras\](.*?)\[\/gras\]/s' => '<strong>$1</strong>',
@@ -278,32 +201,173 @@ function bbcodeToHtml($text) {
         '/\[citation\](.*?)\[\/citation\]/s' => '<blockquote>$1</blockquote>',
         '/\[liste\](.*?)\[\/liste\]/s' => '<ul>$1</ul>',
         '/\[item\](.*?)\[\/item\]/s' => '<li>$1</li>',
-        '/\[a:(.*?)\](.*?)\[\/a\]/s' => '<a href="$1" target="_blank">$2</a>',
         '/\[br\]/' => '<br>',
+        '/\[widget-deezer:(\d+):(\d+):(.*?)( .*?)\]/' => '<figure><iframe width="$1" height="$2" src="$3" allow="encrypted-media; clipboard-write"></iframe><figcaption>$4</figcaption></figure>',
         '/\[widget-deezer:(\d+):(\d+):(.*?)\]/' => '<iframe width="$1" height="$2" src="$3" allow="encrypted-media; clipboard-write"></iframe>',
-        '/\[widget-deezer:(\d+):(\d+):(.*?)( .*?)\]/' => '<iframe width="$1" height="$2" src="$3"$4 allow="encrypted-media; clipboard-write"></iframe>',
-        '/\[widget-deezer:(\d+):(\d+):(.*?) legende\](.*?)\[\/widget-deezer\]/' => '<figure><iframe width="$1" height="$2" src="$3" allow="encrypted-media; clipboard-write"></iframe><figcaption>$4</figcaption></figure>',
         '/\[#(\d+)\]/' => '&#$1;',
         '/\[#x([0-9a-fA-F]+)\]/' => '&#x$1;'
     );
 
-    // Implémenter la fonction de traitement
+    // Boucle de traitement
+    foreach ($bbcode_rules as $pattern => $replacement) {
+        $text = preg_replace($pattern, $replacement, $text);
+    } 
+    
+    // Gestion des URLs pour les balises a
+    $text = preg_replace_callback('/\[a:(.*?)\](.*?)\[\/a\]/s', function($matches) {
+        $url = $matches[1];
+        $content = $matches[2];
+        if (filter_var($url, FILTER_VALIDATE_URL) || file_exists($url)) {
+            if (strpos($url, 'http') === 0) {
+                return '<a href="' . $url . '" target="_blank">' . $content . '</a>';
+            } else {
+                return '<a href="' . $url . '">' . $content . '</a>';
+            }
+        }
+    }, $text);
+
+    // Retourne le texte avec les balises BBCode remplacées par les balises HTML correspondantes
+    return $text;
+}
+
+
+//_______________________________________________________________
+/**
+ * Conversion des balises BBCode (seulement les unicodes) en balises HTML
+ *
+ * @param  string  $text   le texte à convertir
+ *
+ * @return string          le texte converti
+ */
+function bbcodeToHtmlUnicode(string $text): string {
+    // Définition des règles de remplacement unicode
+    $bbcode_rules = array(
+        '/\[#(\d+)\]/' => '&#$1;',
+        '/\[#x([0-9a-fA-F]+)\]/' => '&#x$1;'
+    );
+
+    // Boucle de traitement
     foreach ($bbcode_rules as $pattern => $replacement) {
         $text = preg_replace($pattern, $replacement, $text);
     }
 
-    // Gestion des URLs pour les balises a et widget-deezer
-    $text = preg_replace_callback('/\[a:(.*?)\](.*?)\[\/a\]/s', function($matches) {
-        $url = $matches[1];
-        $content = $matches[2];
-        if (strpos($url, 'http') === 0) {
-            return '<a href="' . $url . '" target="_blank">' . $content . '</a>';
-        } else {
-            return '<a href="' . $url . '">' . $content . '</a>';
-        }
-    }, $text);
-
-    // Retourner le texte avec les balises BBCode remplacées par les balises HTML correspondantes
+    // Retourne le texte avec les balises BBCode unicode remplacées par les balises HTML correspondantes
     return $text;
 }
 
+
+
+//_______________________________________________________________
+/**
+ * Affichage du contenu main de la page
+ * 
+ * @param array         $tab        le tableau contenant les informations de l'article
+ * @param string        $auteur     le nom de l'auteur de l'article
+ * @param int           $id         l'identifiant de l'article
+ * @param mysqli_result $result     le résultat de la requête SQL
+ * 
+ * @return void
+ */
+function affContenuMainL(array $tab, string $auteur, int $id, mysqli_result $result): void {
+    echo
+        '<main id="article">';
+
+        // Affichage du bandeau pour modifier/supprimer l'article si utilisateur est rédacteur
+        if (estAuthentifie() && $tab['utPseudo'] == $_SESSION['pseudo']) {
+            echo '<section class="modification-article">',
+            '<p>Vous êtes l\'auteur de cet article, <a href="./edition.php">cliquer ici pour le modifier</a>.</p>',
+            '</section>';
+        }
+
+    $BBCode_article = bbcodeToHtml($tab['arTexte']);
+    echo    '<article>',
+                '<h3>', $tab['arTitre'], '</h3>',
+                '<img src="../upload/', $tab['arID'], '.jpg" alt="Photo d\'illustration | ', $tab['arTitre'], '" onerror="this.style.display=\'none\';">',
+                $BBCode_article,
+                '<footer>',
+                    'Par <a href="redaction.php#', $tab['utPseudo'], '">', $auteur, '</a>. ',
+                    'Publié le ', dateIntToStringFootL($tab['arDatePubli']),
+                    isset($tab['arDateModif']) ? ', modifié le '. dateIntToStringFootL($tab['arDateModif']) : '',
+                '</footer>',
+            '</article>';
+
+    // pour accéder une seconde fois au premier enregistrement de la sélection
+    mysqli_data_seek($result, 0);
+
+    affContenuComL($tab, $id, $result);
+
+    echo '</main>';
+}
+
+
+//_______________________________________________________________
+/**
+ * Affichage des commentaires de l'article
+ * 
+ * @param array         $tab        le tableau contenant les informations de l'article
+ * @param int           $id         l'identifiant de l'article
+ * @param mysqli_result $result     le résultat de la requête SQL
+ * 
+ * @return void
+ */
+function affContenuComL(array $tab, int $id, mysqli_result $result): void {
+
+    // chiffrement de l'id
+    $id_chiffre = chiffrerSignerURL($id);
+
+    // Génération du début de la zone de commentaires
+    echo '<section>',
+            '<h2>Réactions</h2>';
+
+    // s'il existe des commentaires, on les affiche un par un.
+    if (isset($tab['coID'])) {
+        echo '<ul>';
+        while ($tab = mysqli_fetch_assoc($result)) {
+            $commentaire_id = $tab['coID'];
+            if (estAuthentifie() && $tab['coAuteur'] === $_SESSION['pseudo']) {
+                echo '<li class="auteurCom">',
+                '<form method="post" action="article.php?id=', $id_chiffre, '">',
+                '<input type="hidden" name="commentaire_id" value="', $commentaire_id, '">',
+                '<input type="submit" name="btnSuprimerCommentaire" value="Supprimer le commentaire">',
+                '</form>';
+            } else if (estAuthentifie() && $tab['arAuteur'] === $_SESSION['pseudo']) {
+                echo '<li class="auteurAr">',
+                '<form method="post" action="article.php?id=', $id_chiffre, '">',
+                '<input type="hidden" name="commentaire_id" value="', $commentaire_id, '">',
+                '<input type="submit" name="btnSuprimerCommentaire" value="Supprimer le commentaire">',
+                '</form>';
+            } else {
+                echo '<li>';
+            }
+            $BBCode_commentaire = bbcodeToHtmlUnicode($tab['coTexte']);
+            echo '<p>Commentaire de <strong>', htmlProtegerSorties($tab['coAuteur']),
+                        '</strong>, le ', dateIntToStringFootL($tab['coDate']),
+                    '</p>',
+                    '<blockquote>', $BBCode_commentaire, '</blockquote>',
+                '</li>';
+        }
+        echo '</ul>';
+    }
+    // sinon on indique qu'il n'y a pas de commentaires
+    else {
+        echo '<p>Il n\'y a pas de commentaire pour cet article. </p>';
+    }
+
+    // Libération de la mémoire associée au résultat de la requête
+    mysqli_free_result($result);
+
+    if (! estAuthentifie()){
+        echo '<p>',
+                '<a href="./connexion.php">Connectez-vous</a> ou <a href="./inscription.php">inscrivez-vous</a> pour pouvoir commenter cet article !',
+            '</p>',
+            '</section>';
+    } else {
+        echo '<form method="post" action="article.php?id=', $id_chiffre, '" class="ajout-article">',
+        '<fieldset>',
+        '<legend>Ajoutez un commentaire</legend>',
+        '<textarea name="textCom" rows="18" cols="80"></textarea>',
+        '<input type="submit" name="btnAjoutCommentaire" value="Publier ce commentaire">',
+        '</fieldset>',
+        '</form>';
+    }
+}

@@ -1,13 +1,25 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                      La Gazette de L-INFO                   \\
+//         Page de recherche d'articles (recherche.php)        \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
 
-// chargement des bibliothèques de fonctions
+
+
+// Chargement des bibliothèques de fonctions
 require_once('bibli_gazette.php');
 require_once('bibli_generale.php');
 
-// bufferisation des sorties
+// Bufferisation des sorties
 ob_start();
 
-// démarrage ou reprise de la session
+// Démarrage ou reprise de la session
 session_start();
 
 affEntete('Recherche');
@@ -21,12 +33,12 @@ if (isset($_POST['btnRecherche'])) {
     $err = false;
 }
 
-// génération du contenu de la page
+// Génération du contenu de la page
 affContenuL($err, $recherches, $results);
 
 affPiedDePage();
 
-// envoi du buffer
+// Envoi du buffer
 ob_end_flush();
 
 
@@ -67,7 +79,6 @@ function traitementRechercheL(array &$recherches, array &$results): bool {
         foreach ($recherches as $recherche) {
             $whereConditions .= '(arTitre LIKE "%' . $recherche . '%" OR arResume LIKE "%' . $recherche . '%") AND ';
         }
-
         // Supprimer le dernier "OR" de la chaîne
         $whereConditions = rtrim($whereConditions, ' AND ');
 
@@ -84,8 +95,9 @@ function traitementRechercheL(array &$recherches, array &$results): bool {
         // Fermeture de la connexion au serveur de BdD
         mysqli_close($bd);
 
-        while ($row = mysqli_fetch_assoc($result)) {
-            $results[] = $row;
+        while ($tab = mysqli_fetch_assoc($result)) {
+            $mois = dateIntToStringL($tab['arDatePubli']);
+            $results[$mois][] = $tab;
         }
 
         return false;
@@ -139,25 +151,8 @@ function affContenuL(bool $err, array $recherches, array $results): void {
         '</section>';
     } else {
 
-        // TODO: correction superposition des articles (test avec "lic")
-        // Créer un tableau associatif pour stocker les articles par mois
-        $articlesParMois = [];
-        foreach ($results as $article) {
-            $mois = dateIntToStringL($article['arDatePubli']);
-            $articlesParMois[$mois][] = $article;
-        }
-
-        // Parcourir les articles à afficher sur la page actuelle
-        foreach ($articlesParMois as $mois => $articlesDuMois) {
-            echo '<section>',
-            '<h2>', $mois, '</h2>';
-            
-            // Parcourir les articles du mois
-            foreach ($articlesDuMois as $article) {
-                affUnArticle($article['arTitre'], $article['arID'], $article['arResume']);
-            }
-            '</section>';
-        }
+        // Des résultats sont trouvés, parcourir les articles à afficher sur la page actuelle
+        ParcoursEtAffArticlesParMois($results);
     }
 
     echo '</main>';

@@ -315,20 +315,16 @@ function affLigneInput(string $libelle, array $attributs = array(), string $pref
 
 //___________________________________________________________________
 /**
- * Chiffre et signe une valeur pour la passer dans une URL en utilisant l'algorithme AES-128 en mode GCM.
+ * Chiffre et signe une valeur pour la passer dans une URL en utilisant l'algorithme AES-128 en mode CBC.
  *
  * @param string $val La valeur à chiffrer
  * @return string La valeur chiffrée encodée URL
  */
 function chiffrerSignerURL(string $val) : string {
-	$ivlen = openssl_cipher_iv_length($cipher='aes-128-gcm');
+	$ivlen = openssl_cipher_iv_length($cipher='AES-128-CBC');
 	$iv = openssl_random_pseudo_bytes($ivlen);
-	// $tag (tag d'authentification)
-	// est une chaîne transmise par référence
-	$x = openssl_encrypt($val, $cipher, 
-						 base64_decode(CLE_CHIFFREMENT),
-	                     OPENSSL_RAW_DATA, $iv, $tag);
-	$x = $iv.$tag.$x;
+	$x = openssl_encrypt($val, $cipher, base64_decode(CLE_CHIFFREMENT), OPENSSL_RAW_DATA, $iv);
+	$x = $iv.$x;
 	$x = base64_encode($x);
 	return urlencode($x);
 }
@@ -341,13 +337,11 @@ function chiffrerSignerURL(string $val) : string {
  * @return string|false La valeur déchiffrée ou false si erreur
  */
 function dechiffrerSignerURL(string $x) : string|false {
-	$x = base64_decode(urldecode($x)); // Décodage de la valeur encodée URL
-    $ivlen = openssl_cipher_iv_length($cipher='aes-128-gcm');
+	$x = base64_decode($x); // Décodage de la valeur encodée URL
+    $ivlen = openssl_cipher_iv_length($cipher='AES-128-CBC');
     $iv = substr($x, 0, $ivlen);
-    $taglen = 16;
-    $tag = substr($x, $ivlen, $taglen);
-    $x = substr($x, $ivlen + $taglen);
-    return openssl_decrypt($x, $cipher, base64_decode(CLE_CHIFFREMENT), OPENSSL_RAW_DATA, $iv, $tag);
+    $x = substr($x, $ivlen);
+    return openssl_decrypt($x, $cipher, base64_decode(CLE_CHIFFREMENT), OPENSSL_RAW_DATA, $iv);
 }
 
 

@@ -1,4 +1,17 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                     La Gazette de L-INFO                    \\
+//             Page d'inscription (inscription.php)            \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
+
+
+
 /* ------------------------------------------------------------------------------
     Architecture de la page
     - étape 1 : vérifications diverses et traitement des soumissions
@@ -318,7 +331,7 @@ function traitementInscriptionL(): array {
 
     $_SESSION['redacteur'] = false; // utile pour l'affichage de la barre de navigation
 
-    // redirection vers la page compte.php
+    // redirection vers la page index.php
     header('Location: ../index.php');
     exit(); //===> Fin du script
 }

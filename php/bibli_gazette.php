@@ -33,10 +33,8 @@ define('AGE_MINIMUM', 18);
 
 define('LMIN_PASSWORD', 4);
 
-
-$i = base64_encode(openssl_random_pseudo_bytes(32));
-// Clé de chiffrement pour les urls (pour l'algorithme AES-128 en mode GCM)
-define('CLE_CHIFFREMENT', $i);
+// Clé de chiffrement pour les urls (pour l'algorithme AES-128 en mode CBC)
+define('CLE_CHIFFREMENT', 'z31uU2g22y/XhFpfuilzEw==');
 
 //_______________________________________________________________
 /**
@@ -50,6 +48,14 @@ define('CLE_CHIFFREMENT', $i);
 function affEntete(string $titre, string $prefixe = '..') : void {
 
     echo
+'<!--
+    _____ _  _ ___ __  __ ____________
+   / ____/ / / /  _/ | / / ____/_  __/
+  / /   / / / // //  |/ / __/   / /   
+ / /___/ /_/ // // /|  / /___  / /    
+ \____/\____/___/_/ |_/_____/ /_/     
+ -->
+ ',
         '<!doctype html>',
         '<html lang="fr">',
             '<head>',
@@ -168,9 +174,8 @@ function affUnArticle(string $titre, int $id, string $resume): void {
     $titre = htmlProtegerSorties($titre);
     $resume = htmlProtegerSorties($resume);
 
-    // TODO: chiffrer l'id pour le passage dans l'URL
-    // $id_chiffre = chiffrerSignerURL($id);
-    $id_chiffre = $id;
+    // Chiffrement de l'id pour le passage dans l'URL
+    $id_chiffre = chiffrerSignerURL($id);
 
     echo '<article class="resume">',
     '<img src="../upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '" onerror="this.onerror=null; this.src=\'../images/none.jpg\';">',
@@ -178,4 +183,46 @@ function affUnArticle(string $titre, int $id, string $resume): void {
     '<p>', $resume, '</p>',
     '<footer><a href="../php/article.php?id=', $id_chiffre, '">Lire l\'article</a></footer>',
     '</article>';
+}
+
+
+
+//_______________________________________________________________
+/**
+ * Parcours les articles à afficher sur la page actuelle et les affiches par mois de création.
+ *
+ * @param  array   $articles     Les articles à parcourir.
+ *
+ * @return void
+ */
+function ParcoursEtAffArticlesParMois(array $articles): void {
+    foreach ($articles as $mois => $articlesDuMois) {
+        echo '<section>',
+        '<h2>', $mois, '</h2>';
+        
+        // Parcourir les articles du mois
+        foreach ($articlesDuMois as $article) {
+            affUnArticle($article['arTitre'], $article['arID'], $article['arResume']);
+        }
+        echo '</section>';
+    }
+}
+
+//_______________________________________________________________
+/**
+ * Affichage d'un message d'erreur dans une zone dédiée de la page.
+ *
+ * @param  string  $msg    le message d'erreur à afficher.
+ *
+ * @return void
+ */
+function affErreur(string $message) : void {
+    echo
+        '<main>',
+            '<section>',
+                '<h2>Oups, il y a eu une erreur...</h2>',
+                '<p>La page que vous avez demandée a terminé son exécution avec le message d\'erreur suivant :</p>',
+                '<blockquote>', $message, '</blockquote>',
+            '</section>',
+        '</main>';
 }

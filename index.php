@@ -4,7 +4,7 @@
 //                      La Gazette de L-INFO                   \\
 //                   Page d'accueil (index.php)                \\
 //                                                             \\
-//                    CUINET ANTOINE TP2A-CMI                  \\       
+//                    CUINET ANTOINE TP2A-CMI                  \\
 //                        Langages du Web                      \\
 //                        L2 Informatique                      \\
 //                         UFC - UFR ST                        \\
@@ -12,24 +12,24 @@
 
 
 
-// chargement des bibliothèques de fonctions
+// Chargement des bibliothèques de fonctions
 require_once('./php/bibli_gazette.php');
 require_once('./php/bibli_generale.php');
 
-// bufferisation des sorties
+// Bufferisation des sorties
 ob_start();
 
-// démarrage ou reprise de la session
+// Démarrage ou reprise de la session
 session_start();
 
 affEntete('Le site de désinformation n°1 des étudiants en Licence Info', '.');
 
-// génération du contenu de la page
+// Génération du contenu de la page
 affContenuL();
 
 affPiedDePage();
 
-// envoi du buffer
+// Envoi du buffer
 ob_end_flush();
 
 
@@ -44,11 +44,10 @@ ob_end_flush();
  *
  * @return  void
  */
-function affContenuL() : void {
-    echo '<main>';
+function affContenuL(): void {
 
+    // Connexion au serveur de BD
     $bd = bdConnect();
-
 
     // génération des 3 derniers articles
     $sql0 = 'SELECT arID, arTitre
@@ -56,7 +55,6 @@ function affContenuL() : void {
              ORDER BY arDatePubli DESC
              LIMIT 0, 3';
     $tab0 = bdSelectArticlesL($bd, $sql0);
-    affBlocTroisArticlesL('&Agrave; la Une', $tab0);
 
     // génération des 3 articles les plus commentés
     $sql1 = 'SELECT arID, arTitre
@@ -66,7 +64,6 @@ function affContenuL() : void {
              ORDER BY COUNT(coArticle) DESC, rand()
              LIMIT 0, 3';
     $tab1 = bdSelectArticlesL($bd, $sql1);
-    affBlocTroisArticlesL('L\'info brûlante', $tab1);
 
     // génération des 3 articles parmi les articles restants
     $sql2 = 'SELECT arID, arTitre FROM article
@@ -77,10 +74,12 @@ function affContenuL() : void {
     // Fermeture de la connexion au serveur de BdD
     mysqli_close($bd);
 
+
+    echo '<main>';
+    affBlocTroisArticlesL('&Agrave; la Une', $tab0);
+    affBlocTroisArticlesL('L\'info brûlante', $tab1);
     affBlocTroisArticlesL('Les incontournables', $tab2);
-
     affHoroscopeL();
-
     echo '</main>';
 }
 
@@ -93,20 +92,19 @@ function affContenuL() : void {
  *
  * @return  void
  */
-function affUnArticleL(int $id, string $titre) : void {
-    $titre = htmlProtegerSorties($titre); // ATTENTION : à ne pas oublier !!!
+function affUnArticleL(int $id, string $titre): void {
+    $titre = htmlProtegerSorties($titre);
     $lien = './php/article.php';
-    // $lien .= '?id='.urlencode($id); // Encodage de l'id pour le passage dans l'URL (en théorie inutile ici car l'id est un entier, mais on ne sait jamais...)
     
-    // TODO: chiffrer l'id pour le passage dans l'URL
-    // $id_chiffre = chiffrerSignerURL($id);
-    $id_chiffre = $id;
+    // Chiffrement de l'id pour le passage dans l'URL
+    $id_chiffre = chiffrerSignerURL($id);
     echo
-            '<a href="', $lien, '?id=', $id_chiffre, '">',
-                '<img src="upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '" onerror="this.onerror=null; this.src=\'./images/none.jpg\';"><br>',
-                $titre,
-            '</a>';
+    '<a href="', $lien, '?id=', $id_chiffre, '">',
+        '<img src="upload/', $id, '.jpg" alt="Photo d\'illustration | ', $titre, '" onerror="this.onerror=null; this.src=\'./images/none.jpg\';"><br>',
+        $titre,
+    '</a>';
 }
+
 //_______________________________________________________________
 /**
  * Affiche un bloc de 3 vignettes.
@@ -116,7 +114,7 @@ function affUnArticleL(int $id, string $titre) : void {
  *
  * @return  void
  */
-function affBlocTroisArticlesL(string $titreBloc, array $articles) : void {
+function affBlocTroisArticlesL(string $titreBloc, array $articles): void {
     echo    '<section class="centre">',
                 '<h2>', $titreBloc, '</h2>';
     foreach($articles as $id => $titre){
@@ -134,7 +132,7 @@ function affBlocTroisArticlesL(string $titreBloc, array $articles) : void {
  *
  * @return array            tableau (clé : id de l'article, valeur associée à la clé : titre de l'article)
  */
-function bdSelectArticlesL(mysqli $bd, string $sql) : array {
+function bdSelectArticlesL(mysqli $bd, string $sql): array {
     $res = [];
     $result = bdSendRequest($bd, $sql);
     while ($t = mysqli_fetch_assoc($result)){
@@ -153,7 +151,7 @@ function bdSelectArticlesL(mysqli $bd, string $sql) : array {
  *
  * @return  void
  */
-function affHoroscopeL() : void {
+function affHoroscopeL(): void {
     echo
     '<section>',
             '<h2>Horoscope de la semaine</h2>',

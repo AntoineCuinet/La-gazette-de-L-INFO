@@ -1,23 +1,35 @@
 <?php
+//_____________________________________________________________\\
+//                                                             \\
+//                      La Gazette de L-INFO                   \\
+//                  Page d'actualités (actus.php)              \\
+//                                                             \\
+//                    CUINET ANTOINE TP2A-CMI                  \\
+//                        Langages du Web                      \\
+//                        L2 Informatique                      \\
+//                         UFC - UFR ST                        \\
+//_____________________________________________________________\\
 
-// chargement des bibliothèques de fonctions
+
+
+// Chargement des bibliothèques de fonctions
 require_once('bibli_gazette.php');
 require_once('bibli_generale.php');
 
-// bufferisation des sorties
+// Bufferisation des sorties
 ob_start();
 
-// démarrage ou reprise de la session
+// Démarrage ou reprise de la session
 session_start();
 
 affEntete('L\'actu');
 
-// génération du contenu de la page
+// Génération du contenu de la page
 affContenuL();
 
 affPiedDePage();
 
-// envoi du buffer
+// Envoi du buffer
 ob_end_flush();
 
 
@@ -33,86 +45,69 @@ ob_end_flush();
  * @return  void
  */
 function affContenuL() : void {
-    echo '<main>';
+    if(isset($_GET['page'])){
+        if (! parametresControle('get', ['page'])){
+            affErreur('Il faut utiliser une URL de la forme : http://..../php/article.php?page=XXX');
+            return; // ==> fin de la fonction
+        }
 
+        // Récupéreration du numéro de page à afficher en échiffrant l'URL
+        $pageCourante = dechiffrerSignerURL($_GET['page']);
+
+        if (! estEntier($pageCourante)){
+            affErreur('L\'identifiant doit être un entier');
+            return; // ==> fin de la fonction
+        }
+
+        if ($pageCourante <= 0){
+            affErreur('L\'identifiant doit être un entier strictement positif');
+            return; // ==> fin de la fonction
+        }
+
+    } else {
+        $pageCourante = 1;
+    }
+
+    // Nombre d'articles par page
+    $articlesParPage = 4;
+    // Calcul de l'index de début pour les articles à afficher sur la page actuelle
+    $indexDebut = ($pageCourante - 1) * $articlesParPage;
+
+    // Connexion au serveur de BD
     $bd = bdConnect();
 
     // Requête SQL pour récupérer les articles
-    $sql = 'SELECT arID, arTitre, arResume, arDatePubli
-            FROM article
-            ORDER BY arDatePubli DESC';
+    $sql = "SELECT article.arID, article.arTitre, article.arResume, article.arDatePubli,
+               (SELECT COUNT(*) FROM article) AS totalArticles
+        FROM article
+        ORDER BY arDatePubli DESC
+        LIMIT $articlesParPage OFFSET $indexDebut";
     $result = bdSendRequest($bd, $sql);
 
     // Fermeture de la connexion au serveur de BdD
     mysqli_close($bd);
 
-
-    // Nombre d'articles par page
-    $articlesParPage = 4;
-    // Nombre total d'articles dans la base de données
-    $totalArticles = $result->num_rows;
-    // Calculer le nombre total de pages nécessaires
-    $totalPages = ceil($totalArticles / $articlesParPage);
-    // Récupérer le numéro de page à afficher
-    $pageCourante = isset($_GET['page']) ? $_GET['page'] : 1;
-    // Afficher les articles récupérés
-    affPagination($totalPages, $pageCourante);
-
-
-    // Calcul de l'index de début et de fin pour les articles à afficher sur la page actuelle
-    $indexDebut = ($pageCourante - 1) * $articlesParPage;
-    $indexFin = $indexDebut + $articlesParPage;
-
-
     // Stockage de tous les articles dans un tableau
     $articles = [];
     while ($tab = mysqli_fetch_assoc($result)) {
-        $articles[] = $tab;
+        $mois = dateIntToStringL($tab['arDatePubli']);
+        $articles[$mois][] = $tab;
+
+        // Nombre total d'articles dans la base de données
+        $totalArticles = $tab['totalArticles'];
     }
-
-    // Créer un tableau associatif pour stocker les articles par mois
-    $articlesParMois = [];
-    foreach ($articles as $article) {
-        $mois = dateIntToStringL($article['arDatePubli']);
-        $articlesParMois[$mois][] = $article;
-    }
+    // Libération de la mémoire associée au résultat de la requête
+    mysqli_free_result($result);
 
 
-    // Variable pour stocker le nombre d'articles déjà affichés
-    $articlesAffiches = 0;
-    // Tableau pour indiquer si un mois a déjà été affiché
-    // TODO: à faire
-    $sectionDejaAffiche = [];
+    echo '<main>';
 
+    // Calculer le nombre total de pages nécessaires
+    $totalPages = ceil($totalArticles / $articlesParPage);
+    // Afficher les articles récupérés
+    affPagination($totalPages, $pageCourante);
 
-    // Parcourir les articles à afficher sur la page actuelle
-    foreach ($articlesParMois as $mois => $articlesDuMois) {
-        echo '<section>',
-        '<h2>', $mois, '</h2>';
-        
-        // Parcourir les articles du mois
-        foreach ($articlesDuMois as $article) {
-            // Vérifier si l'index de l'article est compris entre l'index de début et de fin
-            if ($articlesAffiches >= $indexDebut && $articlesAffiches < $indexFin) {
-                affUnArticle($article['arTitre'], $article['arID'], $article['arResume']);
-            }
-            // Incrémenter le nombre d'articles affichés
-            $articlesAffiches++;
-
-            // Vérifier si le nombre d'articles affichés atteint 4 (fin de la page)
-            if ($articlesAffiches >= $indexFin) {
-                // Sortir de la boucle des articles du mois
-                break;
-            }
-        }
-
-        // Vérifier si le nombre d'articles affichés atteint 4 (fin de la page)
-        if ($articlesAffiches >= $indexFin) {
-            // Sortir de la boucle des mois
-            break;
-        }
-        echo '</section>';
-    }
+    ParcoursEtAffArticlesParMois($articles);
     echo '</main>';
 }
 
@@ -134,7 +129,10 @@ function affPagination(int $totalPages, int $pageCourante): void {
         if ($i == $pageCourante) {
             echo '<span class="current-page">' . $i . '</span>';
         } else {
-            echo '<a href="?page=' . $i . '">' . $i . '</a>';
+            // Chiffrement de l'id pour le passage dans l'URL
+            $id_chiffre = chiffrerSignerURL($i);
+            
+            echo '<a href="?page=' . $id_chiffre . '">' . $i . '</a>';
         }
     }
     echo '</p>',
