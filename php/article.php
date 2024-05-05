@@ -79,6 +79,10 @@ function affContenuL(): void {
             $pseudo = $_SESSION['pseudo'];
             $date = date('Ymdhm');
             $textCom = htmlspecialchars($textCom);
+
+            if (mb_strlen($textCom) > LMAX_COM){
+                $textCom = mb_substr($textCom, 0, LMAX_COM);
+            }
     
             $sqlAdd = "INSERT INTO commentaire (coAuteur, coTexte, coDate, coArticle)
                        VALUES ('$pseudo', '$textCom', '$date', '$id')";
@@ -193,6 +197,7 @@ function upperCaseFirstLetterLowerCaseRemainderL(string $str): string {
  * @return string          le texte converti
  */
 function bbcodeToHtml(string $text): string {
+
     // Définition des règles de remplacement
     $bbcode_rules = array(
         '/\[p\](.*?)\[\/p\]/s' => '<p>$1</p>',
@@ -240,6 +245,8 @@ function bbcodeToHtml(string $text): string {
  * @return string          le texte converti
  */
 function bbcodeToHtmlUnicode(string $text): string {
+    $text = htmlProtegerSorties($text);
+
     // Définition des règles de remplacement unicode
     $bbcode_rules = array(
         '/\[#(\d+)\]/' => '&#$1;',
@@ -274,8 +281,11 @@ function affContenuMainL(array $tab, string $auteur, int $id, mysqli_result $res
 
         // Affichage du bandeau pour modifier/supprimer l'article si utilisateur est rédacteur
         if (estAuthentifie() && $tab['utPseudo'] == $_SESSION['pseudo']) {
+            // Chiffrement de l'id pour le passage dans l'URL
+            $id_chiffre = chiffrerSignerURL($id);
+    
             echo '<section class="modification-article">',
-            '<p>Vous êtes l\'auteur de cet article, <a href="./edition.php">cliquer ici pour le modifier</a>.</p>',
+            '<p>Vous êtes l\'auteur de cet article, <a href="./edition.php?article=', $id_chiffre, '">cliquer ici pour le modifier</a>.</p>',
             '</section>';
         }
 

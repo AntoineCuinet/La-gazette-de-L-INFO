@@ -27,6 +27,13 @@ define('LMAX_NOM', 50);      // taille du champ usNom de la table utilisateur
 define('LMAX_PRENOM', 60);   // taille du champ usPrenom de la table utilisateur
 define('LMAX_EMAIL', 255);   // taille du champ usMail de la table utilisateur
 
+// limites liées aux tailles des champs de la table article
+define('LMAX_TITRE', 150);   // taille du champ arTitre de la table article
+
+// limites liées aux tailles des champs de la table commentaire
+define('LMAX_COM', 255);   // taille du champ arTitre de la table commentaire
+
+
 define('LMIN_PSEUDO', 4);
 
 define('AGE_MINIMUM', 18);

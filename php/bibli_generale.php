@@ -260,7 +260,7 @@ function getArrayMonths() : array {
 //___________________________________________________________________
 /**
  * Vérification des champs texte des formulaires
- * - utilisé par les pages commentaire.php et inscription.php
+ * - utilisé par la page inscription.php
  *
  * @param  string        $texte     texte à vérifier
  * @param  string        $nom       chaîne à ajouter dans celle qui décrit l'erreur
