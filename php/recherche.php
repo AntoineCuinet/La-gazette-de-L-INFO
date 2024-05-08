@@ -61,6 +61,11 @@ ob_end_flush();
  *  @return bool    un booléen à true si des erreurs sont détectées, false sinon
  */
 function traitementRechercheL(array &$recherches, array &$results): bool {
+    if(!parametresControle('post', ['textRecherche', 'btnRecherche'])) {
+        sessionExit();
+    }
+
+    // Vérification de la validité des données reçues
     if (preg_match('/^(?=.*[^ ]{3})[0-9a-zA-Z\' -]{3,255}$/u', $_POST['textRecherche'])) {
          
         $recherches = explode(" ", $_POST['textRecherche']);
@@ -79,7 +84,7 @@ function traitementRechercheL(array &$recherches, array &$results): bool {
         foreach ($recherches as $recherche) {
             $whereConditions .= '(arTitre LIKE "%' . $recherche . '%" OR arResume LIKE "%' . $recherche . '%") AND ';
         }
-        // Supprimer le dernier "OR" de la chaîne
+        // Supprimer le dernier "AND" de la chaîne
         $whereConditions = rtrim($whereConditions, ' AND ');
 
 

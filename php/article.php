@@ -55,6 +55,9 @@ function affContenuL(): void {
 
     // enregistrement d'un commentaire
     if (isset($_POST['btnAjoutCommentaire'])) {
+        if(!parametresControle('post', ['textCom', 'btnAjoutCommentaire'])) {
+            sessionExit();
+        }
 
         $textCom = $_POST['textCom'] = trim($_POST['textCom']);
 
@@ -78,6 +81,9 @@ function affContenuL(): void {
 
     // suppression d'un commentaire
     if (isset($_POST['btnSuprimerCommentaire'])) {
+        if(!parametresControle('post', ['commentaire_id', 'btnSuprimerCommentaire'])) {
+            sessionExit();
+        }
         $idCom = $_POST['commentaire_id'];
 
         // Requête SQL pour supprimer le commentaire
@@ -268,9 +274,9 @@ function affContenuMainL(array $tab, string $auteur, int $id, mysqli_result $res
             // Chiffrement de l'id pour le passage dans l'URL
             $id_chiffre = chiffrerSignerURL($id);
     
-            echo '<section class="modification-article">',
+            echo '<div class="modification-article">',
             '<p>Vous êtes l\'auteur de cet article, <a href="./edition.php?article=', $id_chiffre, '">cliquer ici pour le modifier</a>.</p>',
-            '</section>';
+            '</div>';
         }
 
     $BBCode_article = bbcodeToHtml($tab['arTexte']);
@@ -353,8 +359,7 @@ function affContenuComL(array $tab, int $id, mysqli_result $result): void {
     if (! estAuthentifie()){
         echo '<p>',
                 '<a href="./connexion.php">Connectez-vous</a> ou <a href="./inscription.php">inscrivez-vous</a> pour pouvoir commenter cet article !',
-            '</p>',
-            '</section>';
+            '</p>';
     } else {
         echo '<form method="post" action="article.php?id=', $id_chiffre, '" class="ajout-article">',
         '<fieldset>',
@@ -364,4 +369,5 @@ function affContenuComL(array $tab, int $id, mysqli_result $result): void {
         '</fieldset>',
         '</form>';
     }
+    echo '</section>';
 }

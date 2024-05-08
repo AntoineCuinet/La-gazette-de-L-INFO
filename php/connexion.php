@@ -99,6 +99,7 @@ function affFormulaireL(?bool $err): void {
     echo
                     '<tr>',
                         '<td colspan="2">',
+                            // tr + td 
                             // '<input type="hidden" name="destinationURL" value="', $destinationURL, '">',
                             '<input type="submit" name="btnConnexion" value="Se connecter"> ',
                             '<input type="reset" value="Annuler">',

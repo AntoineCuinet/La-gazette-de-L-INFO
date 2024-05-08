@@ -106,7 +106,7 @@ function affContenuL() : void {
  * @return void
  */
 function affPagination(int $totalPages, int $pageCourante): void {
-    echo '<section class="pagination">',
+    echo '<div class="pagination">',
     '<p>Pages : ';
 
     for($i = 1; $i <= $totalPages; $i++) {
@@ -120,5 +120,5 @@ function affPagination(int $totalPages, int $pageCourante): void {
         }
     }
     echo '</p>',
-    '</section>';
+    '</div>';
 }

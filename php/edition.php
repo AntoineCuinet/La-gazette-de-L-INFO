@@ -66,6 +66,7 @@ ob_end_flush();
  * @return  void
  */
 function affContenuL(?array &$errs): void {
+    // Vérification de GET et déchiffrement de l'id
     $id = verifGet('article', 'article');
 
     echo '<main>';
@@ -127,7 +128,7 @@ function affContenuArticleL(?array &$err, int $id): void {
     '<table>';
 
     affLigneInput('Sélectionnez le fichier à télécharger (facultatif) :', array('type' => 'file', 'name' => 'file'));
-    echo '<input type="hidden" name="MAX_FILE_SIZE" value="102400">';
+    echo '<tr><td colspan="2"><input type="hidden" name="MAX_FILE_SIZE" value="102400"></td></tr>';
     affLigneInput('Le titre de l\'article : ', array('type' => 'text', 'name' => 'title', 'value' => $tab['arTitre'] , 'required' => null));
 
     echo '<tr>',
@@ -259,6 +260,7 @@ function traitementSuppAr() {
         sessionExit();
     }
 
+    // Vérification de GET et déchiffrement de l'id
     $id = verifGet('article', 'article');
 
     // Ouverture de la connexion à la base
@@ -309,7 +311,7 @@ function confirmationSupp() {
             '<form method="post" action="edition.php?article=', $id_chiffre, '">',
                 '<table>',
                     '<tr>',
-                        '<td colspan="2">',
+                        '<td>',
                             '<input type="submit" name="btnComfirmerSuppArticle" value="Supprimer"> ',
                             '<input type="submit" name="btnAnnulerSuppArticle" value="Annuler"> ',
                         '</td>',

@@ -87,7 +87,7 @@ function affContenuL(?array $err): void {
         '<table>';
 
     affLigneInput('Sélectionnez le fichier à télécharger (facultatif) :', array('type' => 'file', 'name' => 'file'));
-    echo '<input type="hidden" name="MAX_FILE_SIZE" value="102400">';
+    echo '<tr><td colspan="2"><input type="hidden" name="MAX_FILE_SIZE" value="102400"></td></tr>';
     affLigneInput('Le titre de l\'article : ', array('type' => 'text', 'name' => 'title', 'value' => $values['title'], 'required' => null));
 
     echo '<tr>',
@@ -174,6 +174,7 @@ function traitementAjoutAr(): array|null {
             $row = mysqli_fetch_assoc($result);
             $ID = $row['arID'];
 
+            // Enregistrement du fichier
             depotFile($ID, $uploadDir);
         }
 
