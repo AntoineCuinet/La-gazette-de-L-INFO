@@ -232,4 +232,5 @@ function affErreur(string $message) : void {
                 '<blockquote>', $message, '</blockquote>',
             '</section>',
         '</main>';
+        affPiedDePage();
 }

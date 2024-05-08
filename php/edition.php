@@ -34,8 +34,9 @@ affEntete('Édition/suppression d\'articles');
 if (isset($_POST['btnEditerArticle'])) {
     $errs = traitementModifAr();
 } else if (isset($_POST['btnSuppArticle'])) {
-    // TODO: à utiliser / modifier
-    // echo '<script>alert("Étes vous sûr de vouloir supprimer cet article ?");</script>';
+    $errs = null;
+    confirmationSupp();
+} else if (isset($_POST['btnComfirmerSuppArticle'])) {
     $errs = null;
     traitementSuppAr();
 } else {
@@ -64,28 +65,12 @@ ob_end_flush();
  * 
  * @return  void
  */
-function affContenuL(?array $errs): void {
-    if (! parametresControle('get', ['article'])){
-        affErreur('Il faut utiliser une URL de la forme : http://..../php/article.php?id=XXX');
-        return; // ==> fin de la fonction
-    }
-
-    // Déchiffrement de l'URL
-    $id = dechiffrerSignerURL($_GET['article']);
-
-    if (! estEntier($id)){
-        affErreur('L\'identifiant doit être un entier');
-        return; // ==> fin de la fonction
-    }
-
-    if ($id <= 0){
-        affErreur('L\'identifiant doit être un entier strictement positif');
-        return; // ==> fin de la fonction
-    }
+function affContenuL(?array &$errs): void {
+    $id = verifGet('article', 'article');
 
     echo '<main>';
-    affContenuArticleL($errs, $id);
     affContenuSuppL($id);
+    affContenuArticleL($errs, $id);
     echo '</main>';
 }
 
@@ -99,7 +84,7 @@ function affContenuL(?array $errs): void {
  * 
  * @return  void
  */
-function affContenuArticleL(?array $err, int $id): void {
+function affContenuArticleL(?array &$err, int $id): void {
 
     // Ouverture de la connexion à la base
     $bd = bdConnect();
@@ -114,7 +99,7 @@ function affContenuArticleL(?array $err, int $id): void {
     // Vérification de l'existence de l'article
     if (mysqli_num_rows($res) == 0) {
         affErreur('L\'article que vous souhaitez éditer n\'existe pas.</p>');
-        return; // ==> fin de la fonction
+        exit(1); // ==> fin de la fonction
     }
 
     // Récupération des données de l'article
@@ -124,25 +109,25 @@ function affContenuArticleL(?array $err, int $id): void {
         '<h2>Éditer votre article</h2>',
         '<p>Pour éditer un article, le titre, le résumé et le contenu ne doivent pas êtres vides.</p>';
 
-        if (! empty($err)) {
-            echo    '<div class="erreur">Les erreurs suivantes ont été relevées lors de l\'enregistrement de l\'article :',
-                    '<ul>';
-        foreach ($err as $e) {
-            echo        '<li>', $e, '</li>';
-        }
-        echo        '</ul>',
-                '</div>';
-        } else if (isset($_POST['btnEditerArticle'])) {
-            echo    '<div class="succes">L\'article à bien été modifié.</div>';
-        }
+    if (! empty($err)) {
+        echo    '<div class="erreur">Les erreurs suivantes ont été relevées lors de l\'enregistrement de l\'article :',
+                '<ul>';
+    foreach ($err as $e) {
+        echo        '<li>', $e, '</li>';
+    }
+    echo        '</ul>',
+            '</div>';
+    } else if (isset($_POST['btnEditerArticle'])) {
+        echo    '<div class="succes">L\'article à bien été modifié.</div>';
+    }
 
-        // chiffrement de l'id
-        $id_chiffre = chiffrerSignerURL($id);
-        echo '<form method="post" action="edition.php?article=', $id_chiffre, '" class="nouveau">',
-        '<table>',
-        '<input type="hidden" name="MAX_FILE_SIZE" value="10000">';
+    // chiffrement de l'id
+    $id_chiffre = chiffrerSignerURL($id);
+    echo '<form method="post" action="edition.php?article=', $id_chiffre, '" class="nouveau" enctype="multipart/form-data">',
+    '<table>';
 
-    affLigneInput('Sélectionnez le fichier à télécharger (facultatif) :', array('type' => 'file', 'name' => 'file', 'value' => ''));
+    affLigneInput('Sélectionnez le fichier à télécharger (facultatif) :', array('type' => 'file', 'name' => 'file'));
+    echo '<input type="hidden" name="MAX_FILE_SIZE" value="102400">';
     affLigneInput('Le titre de l\'article : ', array('type' => 'text', 'name' => 'title', 'value' => $tab['arTitre'] , 'required' => null));
 
     echo '<tr>',
@@ -180,8 +165,7 @@ function affContenuSuppL(int $id): void {
 
     // chiffrement de l'id
     $id_chiffre = chiffrerSignerURL($id);
-    echo '<form method="post" action="edition.php?article=', $id_chiffre, '.php">',
-            '<input type="hidden" name="article_id" value="', $id, '">', 
+    echo '<form method="post" action="edition.php?article=', $id_chiffre, '">',
             '<input type="submit" name="btnSuppArticle" value="Supprimer"> ',
         '</form>',
     '</section>';
@@ -197,83 +181,32 @@ function affContenuSuppL(int $id): void {
  * @return  array|null  tableau associatif contenant les erreurs de saisie ou null si l'ajout a été effectué
  */
 function traitementModifAr(): array|null {
-    // TODO: à utiliser / modifier
-    // if(! parametresControle('post', ['title', 'resumAr', 'textAr', 'btnCreerArticle'], ['file'])) {
-    //     sessionExit();
-    // }
+    if(!parametresControle('post', ['MAX_FILE_SIZE', 'title', 'resumAr', 'textAr', 'btnEditerArticle'])) {
+        sessionExit();
+    }
 
     $erreurs = [];
 
-
-    // Vérification du titre
+    // Vérification des entrées
     $title = $_POST['title'] = trim($_POST['title']);
-    if (empty($title)) {
-        $erreurs[] = 'Le titre ne doit pas être vide.';
-    } else if (mb_strlen($title) > LMAX_TITRE) {
-        $erreurs[] = 'Le titre ne doit pas dépasser ' . LMAX_TITRE . ' caractères.';
-    }
-
-    // Vérification du résumé
+    verifierTexte($title, 'Le titre', $erreurs, LMAX_TITRE);
+    
     $resumAr = $_POST['resumAr'] = trim($_POST['resumAr']);
-    if (empty($resumAr)) {
-        $erreurs[] = 'Le résumé ne doit pas être vide.';
-    }
+    verifierTexte($resumAr, 'Le résumé', $erreurs);
 
-    // Vérification du texte
     $textAr = $_POST['textAr'] = trim($_POST['textAr']);
-    if (empty($textAr)) {
-        $erreurs[] = 'Le texte ne doit pas être vide.';
-    }
+    verifierTexte($textAr, 'Le texte', $erreurs);
 
-
-    // Vérification de l'image
-    if(! isset($_FILES)) {
-        // TODO: à utiliser / modifier
-        // TODO: remplacement encienne image si existante par nouvelle si upload
-        // Validation de l'image
-        if ($_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $image_info = getimagesize($_FILES['image']['tmp_name']);
-            $file_size = $_FILES['image']['size'];
-
-            // Vérifie si le fichier est une image au format JPG
-            if ($image_info !== false && $image_info['mime'] === 'image/jpeg') {
-                // Vérifie si la taille du fichier est inférieure à 100 Ko
-                if ($file_size <= 100 * 1024) {
-                    // Vérifie si les dimensions correspondent au format 4/3
-                    if ($image_info[0] / $image_info[1] === 4 / 3) {
-                        // Redimensionne l'image si nécessaire
-                        // Note: vous devez utiliser une bibliothèque de traitement d'image comme GD ou Imagick
-
-                        // Stockage de l'image
-                        $upload_dir = '/chemin/vers/upload/';
-                        $file_name = uniqid('image_') . '.jpg'; // Génère un nom de fichier unique
-                        $upload_path = $upload_dir . $file_name;
-
-                        if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
-                            // Mise à jour de la date de dernière modification de l'article
-                            // Assurez-vous d'avoir une méthode pour identifier et mettre à jour l'article associé
-                        } else {
-                            echo "Erreur lors de l'enregistrement de l'image.";
-                        }
-                    } else {
-                        echo "Les dimensions de l'image ne correspondent pas au format 4/3.";
-                    }
-                } else {
-                    echo "La taille de l'image dépasse 100 Ko.";
-                }
-            } else {
-                echo "Le fichier n'est pas au format JPG.";
-            }
-        } else {
-            echo "Erreur lors du téléchargement de l'image.";
-        }
+    // Vérification de l'image (si elle est présente)
+    if(isset($_FILES['file']) && !empty($_FILES['file']['name'])) {
+        verifUpload($erreurs);
     }
 
     // Modification de l'article
     if (empty($erreurs)) {
         $date = date('Ymdhm');
         $pseudo = $_SESSION['pseudo'];
-        $id = dechiffrerSignerURL($_GET['article']);
+        $id = verifGet('article', 'article');
 
         // Ouverture de la connexion à la base
         $bd = bdConnect();
@@ -294,6 +227,20 @@ function traitementModifAr(): array|null {
         // Fermeture de la connexion à la base de données
         mysqli_close($bd);
 
+        if (isset($_FILES['file']) && !empty($_FILES['file']['name'])){
+            // Vérification du droit d'écriture sur le répertoire upload
+            $uploadDir = '../upload/';
+            verifDroitEcriture($uploadDir);
+
+            // Vérification de l'existence d'une ancienne image + suppression
+            $cheminFichier = '../upload/' . $id . '.jpg';
+            if (file_exists($cheminFichier)) {
+                unlink($cheminFichier);
+            }
+
+            depotFile($id, $uploadDir);
+        }
+
         return null;
     } else {
         return $erreurs;
@@ -308,23 +255,67 @@ function traitementModifAr(): array|null {
  * @return  void
  */
 function traitementSuppAr() {
-    $idAr = $_POST['article_id'];
+    if(!parametresControle('post', ['btnComfirmerSuppArticle'])) {
+        sessionExit();
+    }
+
+    $id = verifGet('article', 'article');
 
     // Ouverture de la connexion à la base
     $bd = bdConnect();
     
     // TODO: faire en cascade
     // Requête SQL pour supprimer le commentaire
-    $sqlDel = "DELETE FROM article WHERE arID = '$idAr'";
+    $sqlDel = "DELETE FROM article WHERE arID = '$id'";
 
     bdSendRequest($bd, $sqlDel);
 
     // Fermeture de la connexion à la base de données
     mysqli_close($bd);
 
-    // TODO: supprimer aussi l'image associée dans upload
+    // Supprimer aussi l'image associée dans upload (si elle existe)
+    $cheminFichier = '../upload/' . $id . '.jpg';
+
+    // Vérifier si le fichier existe avant de le supprimer
+    if (file_exists($cheminFichier)) {
+        unlink($cheminFichier);
+    }
 
     // redirection vers la page index.php
     header('Location: ../index.php');
     exit(); //===> Fin du script
+}
+
+
+//_______________________________________________________________
+/**
+ * Affichage de la fenêtre modale de confirmation de suppression
+ * 
+ * @return  void
+ */
+function confirmationSupp() {
+    if(!parametresControle('post', ['btnSuppArticle'])) {
+        sessionExit();
+    }
+
+    // Vérification de GET et déchiffrement de l'id
+    $id = verifGet('article', 'article');
+    $id_chiffre = chiffrerSignerURL($id);
+
+    echo 
+    '<div class="modal">',
+        '<div class="modal-content">',
+            '<h3>Êtes-vous sûr de vouloir supprimer cet article ?</h3>',
+            '<form method="post" action="edition.php?article=', $id_chiffre, '">',
+                '<table>',
+                    '<tr>',
+                        '<td colspan="2">',
+                            '<input type="submit" name="btnComfirmerSuppArticle" value="Supprimer"> ',
+                            '<input type="submit" name="btnAnnulerSuppArticle" value="Annuler"> ',
+                        '</td>',
+                    '</tr>',
+                '</table>',
+            '</form>',
+        '</div>',
+    '</div>';
 }

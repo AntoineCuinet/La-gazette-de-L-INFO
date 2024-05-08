@@ -45,25 +45,9 @@ ob_end_flush();
  * @return  void
  */
 function affContenuL(): void {
-
-    if (! parametresControle('get', ['id'])){
-        affErreur('Il faut utiliser une URL de la forme : http://..../php/article.php?id=XXX');
-        return; // ==> fin de la fonction
-    }
-
-    // Déchiffrement de l'URL
-    $id = dechiffrerSignerURL($_GET['id']);
-
-    if (! estEntier($id)){
-        affErreur('L\'identifiant doit être un entier');
-        return; // ==> fin de la fonction
-    }
-
-    if ($id <= 0){
-        affErreur('L\'identifiant doit être un entier strictement positif');
-        return; // ==> fin de la fonction
-    }
-
+    
+    // Vérification de GET et déchiffrement de l'id
+    $id = verifGet('id', 'article');
 
     // ouverture de la connexion à la base de données
     $bd = bdConnect();
@@ -123,7 +107,7 @@ function affContenuL(): void {
         affErreur('L\'identifiant de l\'article n\'a pas été trouvé dans la base de données');
         // Libération de la mémoire associée au résultat de la requête
         mysqli_free_result($result);
-        return; // ==> fin de la fonction
+        exit(1); // ==> fin de la fonction
     }
 
     $tab = mysqli_fetch_assoc($result);

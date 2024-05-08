@@ -46,24 +46,8 @@ ob_end_flush();
  */
 function affContenuL() : void {
     if(isset($_GET['page'])){
-        if (! parametresControle('get', ['page'])){
-            affErreur('Il faut utiliser une URL de la forme : http://..../php/article.php?page=XXX');
-            return; // ==> fin de la fonction
-        }
-
-        // Récupéreration du numéro de page à afficher en échiffrant l'URL
-        $pageCourante = dechiffrerSignerURL($_GET['page']);
-
-        if (! estEntier($pageCourante)){
-            affErreur('L\'identifiant doit être un entier');
-            return; // ==> fin de la fonction
-        }
-
-        if ($pageCourante <= 0){
-            affErreur('L\'identifiant doit être un entier strictement positif');
-            return; // ==> fin de la fonction
-        }
-
+        // Vérification de GET et déchiffrement de l'id
+        $pageCourante = verifGet('page', 'article');
     } else {
         $pageCourante = 1;
     }

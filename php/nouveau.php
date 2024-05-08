@@ -60,6 +60,12 @@ ob_end_flush();
  * @return  void
  */
 function affContenuL(?array $err): void {
+    // réaffichage des données soumises en cas d'erreur
+    if (isset($_POST['btnCreerArticle'])){
+        $values = htmlProtegerSorties($_POST);
+    } else {
+        $values = ['title' => '', 'resumAr' => '', 'textAr' => ''];
+    }
     echo '<main>',
     '<section>',
         '<h2>Créer votre nouvel article</h2>',
@@ -82,15 +88,15 @@ function affContenuL(?array $err): void {
 
     affLigneInput('Sélectionnez le fichier à télécharger (facultatif) :', array('type' => 'file', 'name' => 'file'));
     echo '<input type="hidden" name="MAX_FILE_SIZE" value="102400">';
-    affLigneInput('Le titre de l\'article : ', array('type' => 'text', 'name' => 'title', 'value' => '', 'required' => null));
+    affLigneInput('Le titre de l\'article : ', array('type' => 'text', 'name' => 'title', 'value' => $values['title'], 'required' => null));
 
     echo '<tr>',
             '<td><label for="resumAr">Le résumé de l\'article :</label></td>',
-            '<td><textarea id="resumAr" name="resumAr" rows="20" cols="40" placeholder="Saisissez ici le résumé de l\'article" required></textarea></td>',
+            '<td><textarea id="resumAr" name="resumAr" rows="20" cols="40" placeholder="Saisissez ici le résumé de l\'article" required>', $values['resumAr'], '</textarea></td>',
         '</tr>',
         '<tr>',
             '<td><label for="textAr">Le contenu de l\'article : <br>(Utilisez le langage de balisage ad hoc de type BBCode)</label></td>',
-            '<td><textarea id="textAr" name="textAr" rows="30" cols="40" placeholder="Saisissez ici le contenu de l\'article (type BBCode)" required></textarea></td>',
+            '<td><textarea id="textAr" name="textAr" rows="30" cols="40" placeholder="Saisissez ici le contenu de l\'article (type BBCode)" required>', $values['textAr'], '</textarea></td>',
         '</tr>';
 
         echo '<tr>',
@@ -113,67 +119,25 @@ function affContenuL(?array $err): void {
  * @return  array|null  tableau associatif contenant les erreurs de saisie ou null si l'ajout a été effectué
  */
 function traitementAjoutAr(): array|null {
-    // TODO: à utiliser / modifier
-    // if(! parametresControle('post', ['title', 'resumAr', 'textAr', 'btnCreerArticle'], ['file'])) {
-    //     sessionExit();
-    // }
+    if(!parametresControle('post', ['MAX_FILE_SIZE', 'title', 'resumAr', 'textAr', 'btnCreerArticle'])) {
+        sessionExit();
+    }
 
     $erreurs = [];
 
-    // Vérification du titre
+    // Vérification des entrées
     $title = $_POST['title'] = trim($_POST['title']);
-    if (empty($title)) {
-        $erreurs[] = 'Le titre ne doit pas être vide.';
-    } else if (mb_strlen($title) > LMAX_TITRE) {
-        $erreurs[] = 'Le titre ne doit pas dépasser ' . LMAX_TITRE . ' caractères.';
-    }
-
-    // Vérification du résumé
+    verifierTexte($title, 'Le titre', $erreurs, LMAX_TITRE);
+    
     $resumAr = $_POST['resumAr'] = trim($_POST['resumAr']);
-    if (empty($resumAr)) {
-        $erreurs[] = 'Le résumé ne doit pas être vide.';
-    }
+    verifierTexte($resumAr, 'Le résumé', $erreurs);
 
-    // Vérification du texte
     $textAr = $_POST['textAr'] = trim($_POST['textAr']);
-    if (empty($textAr)) {
-        $erreurs[] = 'Le texte ne doit pas être vide.';
-    }
+    verifierTexte($textAr, 'Le texte', $erreurs);
 
     // Vérification de l'image (si elle est présente)
-    if(! empty($_FILES)) {
-        if ($_FILES['file']['error'] === 0) {
-
-            // Vérification de la taille du fichier, si elle est supérieure à 100 Ko
-            $maxSize = 100 * 1024; // 100 Ko
-            $file_size = $_FILES['file']['size'];
-            if ($file_size > $maxSize) {
-                $erreurs[] = 'La taille de l\'image dépasse 100 Ko.';
-            }
-
-            // Vérification de l’extension du fichier (JPG)
-            $oks = array('.jpg');
-            $nom = $_FILES['file']['name'];
-            $ext = strtolower(substr($nom, strrpos($nom, '.')));
-            if (! in_array($ext, $oks)) {
-                $erreurs[] = 'Le fichier n\'est pas au format JPG.';
-            }
-
-            // Vérification du contenu du fichier avec son type MIME
-            $oks = array('image/jpeg');
-            $type = mime_content_type($_FILES['file']['tmp_name']);
-            if (! in_array($type, $oks)) {
-                $erreurs[] = 'Le contenu du fichier n\'est pas autorisé.';
-            }
-
-            // Vérifie si les dimensions correspondent au format 4/3
-            $image_info = getimagesize($_FILES['file']['tmp_name']);
-            if ($image_info[0] / $image_info[1] !== 4 / 3) {
-                $erreurs[] = 'Les dimensions de l\'image ne correspondent pas au format 4/3.';
-            }
-        } else {
-            $erreurs[] = 'Erreur lors du téléchargement de l\'image, réessayer.';
-        }
+    if(isset($_FILES['file']) && !empty($_FILES['file']['name'])) {
+        verifUpload($erreurs);
     }
 
     // Ajout de l'article
@@ -195,16 +159,10 @@ function traitementAjoutAr(): array|null {
 
         bdSendRequest($bd, $sql);
 
-        if (! empty($_FILES)){
+        if (isset($_FILES['file']) && !empty($_FILES['file']['name'])){
             // Vérification du droit d'écriture sur le répertoire upload
             $uploadDir = '../upload/';
-            if (!file_exists($uploadDir)) {
-                // Le répertoire n'existe pas, on le créer
-                mkdir($uploadDir, 0700, true);
-            }
-            if (!is_writable($uploadDir)) {
-                chmod($uploadDir, 0700);
-            }
+            verifDroitEcriture($uploadDir);
 
             // Requête pour récupérer l'id de l'article créer
             $sql = "SELECT arID FROM article 
@@ -216,12 +174,7 @@ function traitementAjoutAr(): array|null {
             $row = mysqli_fetch_assoc($result);
             $ID = $row['arID'];
 
-            // TODO: Redimensionne l'image, vous devez utiliser une bibliothèque de traitement d'image comme GD ou Imagick
-            // Stockage de l'image
-            $Dest = $uploadDir . $ID . '.jpg';
-            if ($_FILES['file']['error'] === 0 && @is_uploaded_file($_FILES['file']['tmp_name']) && @move_uploaded_file($_FILES['file']['tmp_name'], $Dest)) {
-                echo $_FILES['file']['name'], ' uploadé';
-            }
+            depotFile($ID, $uploadDir);
         }
 
         // fermeture de la connexion à la base de données
@@ -231,18 +184,4 @@ function traitementAjoutAr(): array|null {
     } else {
         return $erreurs;
     }
-}
-
-
-// TODO: à utiliser / modifier
-function vérifUpload() {
-
-}
-
-// TODO: à utiliser / modifier
-function verifTypeUpload() {
-}
-
-// TODO: à utiliser / modifier
-function depotFile() {
 }

@@ -361,3 +361,147 @@ function dateIntToStringL(int $date): string {
 
     return $months[$mois - 1] . ' ' . $annee;
 }
+
+
+//_______________________________________________________________
+/**
+ * Vérification pour l'upload d'une image
+ *  - Vérification de la taille du fichier, si elle est supérieure à 100 Ko
+ *  - Vérification de l’extension du fichier (JPG)
+ *  - Vérification du contenu du fichier avec son type MIME
+ *  - Vérifie si les dimensions correspondent au format 4/3
+ *
+ * @param   array   $erreurs    tableau associatif contenant les erreurs de saisie
+ * 
+ * @return  void
+ */
+function verifUpload(array &$erreurs): void {
+    if ($_FILES['file']['error'] === 0) {
+
+        // Vérification de la taille du fichier, si elle est supérieure à 100 Ko
+        $maxSize = 100 * 1024; // 100 Ko
+        $file_size = $_FILES['file']['size'];
+        if ($file_size > $maxSize) {
+            $erreurs[] = 'La taille de l\'image dépasse 100 Ko.';
+        }
+
+        // Vérification de l’extension du fichier (JPG)
+        $oks = array('.jpg');
+        $nom = $_FILES['file']['name'];
+        $ext = strtolower(substr($nom, strrpos($nom, '.')));
+        if (! in_array($ext, $oks)) {
+            $erreurs[] = 'Le fichier n\'est pas au format JPG.';
+        }
+
+        // Vérification du contenu du fichier avec son type MIME
+        $oks = array('image/jpeg');
+        $type = mime_content_type($_FILES['file']['tmp_name']);
+        if (! in_array($type, $oks)) {
+            $erreurs[] = 'Le contenu du fichier n\'est pas autorisé.';
+        }
+
+        // Vérifie si les dimensions correspondent au format 4/3
+        $image_info = getimagesize($_FILES['file']['tmp_name']);
+        // Calculer le ratio largeur/hauteur
+        $ratio = $image_info[0] / $image_info[1];
+        // Définir la marge d'erreur acceptable
+        $marge_erreur = 0.1;
+        if (abs($ratio - 4/3) > $marge_erreur) {
+            $erreurs[] = 'Les dimensions de l\'image ne correspondent pas au format 4/3.';
+        }
+    } else {
+        $erreurs[] = 'Erreur lors du téléchargement de l\'image, réessayer.';
+    }
+}
+
+//_______________________________________________________________
+/**
+ * Vérification du droit d'écriture sur le répertoire $uploadDir
+ *
+ * @param   array   $erreurs    tableau associatif contenant les erreurs de saisie
+ * 
+ * @return  void
+ */
+function verifDroitEcriture(string $uploadDir): void {
+    if (!file_exists($uploadDir)) {
+        // Le répertoire n'existe pas, on le créer
+        mkdir($uploadDir, 0700, true);
+    }
+    if (!is_writable($uploadDir)) {
+        chmod($uploadDir, 0700);
+    }
+}
+
+
+//_______________________________________________________________
+/**
+ * Vérification de la présence, de la validité et déchiffrage d'un paramètre GET
+ *
+ * @param   string  $cle    clé du paramètre GET
+ * @param   string  $page   nom de la page
+ * 
+ * @return  int     identifiant de l'article déchiffré
+ */
+function verifGet(string $cle, string $page): int {
+    if (! parametresControle('get', ["$cle"])){
+        affErreur('Il faut utiliser une URL de la forme : http://..../php/' . $page . '.php?' . $cle . '=XXX');
+        exit(1); // ==> fin de la fonction
+    }
+
+    // Déchiffrement de l'URL
+    $id = dechiffrerSignerURL($_GET["$cle"]);
+
+    if (! estEntier($id)){
+        affErreur('L\'identifiant doit être un entier');
+        exit(1); // ==> fin de la fonction
+    }
+
+    if ($id <= 0){
+        affErreur('L\'identifiant doit être un entier strictement positif');
+        exit(1); // ==> fin de la fonction
+    }
+
+    return $id;
+}
+
+
+//_______________________________________________________________
+/**
+ * Redimensionnement de l'image et upload
+ *
+ * @param   array   $erreurs    tableau associatif contenant les erreurs de saisie
+ * 
+ * @return  void
+ */
+function depotFile(int $ID, string $uploadDir) {
+
+
+    // TODO: Redimensionne l'image, vous devez utiliser une bibliothèque de traitement d'image comme GD ou Imagick
+    // Obtenir les dimensions de l'image
+    $image = $_FILES['file']['tmp_name'];
+    $image_info = getimagesize($image);
+    $width_orig = $image_info[0];
+    $height_orig = $image_info[1];
+
+    // Définir les nouvelles dimensions pour l'image redimensionnée
+    $new_width = 248; // Largeur souhaitée
+    $new_height = 186; // Hauteur souhaitée
+
+    // $image = imagecreatefromjpeg($image);
+    // // Créer une nouvelle image redimensionnée
+    // $new_image = imagecreatetruecolor($new_width, $new_height);
+    // imagecopyresampled($new_image, $image, 0, 0, 0, 0, $new_width, $new_height, $width_orig, $height_orig);
+
+
+    // Stockage de l'image
+    $Dest = $uploadDir . $ID . '.jpg';
+    is_uploaded_file($image);
+    move_uploaded_file($image, $Dest);
+    
+    // imagejpeg($new_image, $Dest);
+    // Libérer la mémoire
+    // imagedestroy($image);
+    // imagedestroy($new_image);
+}
+
+
