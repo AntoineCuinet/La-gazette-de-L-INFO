@@ -400,15 +400,18 @@ function verifUpload(array &$erreurs): void {
             $erreurs[] = 'Le contenu du fichier n\'est pas autorisé.';
         }
 
-        // Vérifie si les dimensions correspondent au format 4/3
-        $image_info = getimagesize($_FILES['file']['tmp_name']);
-        // Calculer le ratio largeur/hauteur
-        $ratio = $image_info[0] / $image_info[1];
-        // Définir la marge d'erreur acceptable
-        $marge_erreur = 0.1;
-        if (abs($ratio - 4/3) > $marge_erreur) {
-            $erreurs[] = 'Les dimensions de l\'image ne correspondent pas au format 4/3.';
+        if (empty($erreurs)) {
+            // Vérifie si les dimensions correspondent au format 4/3
+            $image_info = getimagesize($_FILES['file']['tmp_name']);
+            // Calculer le ratio largeur/hauteur
+            $ratio = $image_info[0] / $image_info[1];
+            // Définir la marge d'erreur acceptable
+            $marge_erreur = 0.1;
+            if (abs($ratio - 4/3) > $marge_erreur) {
+                $erreurs[] = 'Les dimensions de l\'image ne correspondent pas au format 4/3.';
+            }
         }
+        
     } else {
         $erreurs[] = 'Erreur lors du téléchargement de l\'image, réessayer.';
     }

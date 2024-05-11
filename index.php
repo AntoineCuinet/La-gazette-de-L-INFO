@@ -9,6 +9,15 @@
 //                        L2 Informatique                      \\
 //                         UFC - UFR ST                        \\
 //_____________________________________________________________\\
+//                                                             \\
+//                          CONCLUSION                         \\
+//                                                             \\
+// Toutes les consignes données dans l'énoncé ont étés         \\
+// appliquées. Tous les affichages et les insertions sont      \\
+// protégés, les informations passé en GET sont chiffrés et    \\
+// signés, W3C a validé tout les fichiers...                   \\
+//_____________________________________________________________\\
+
 
 
 

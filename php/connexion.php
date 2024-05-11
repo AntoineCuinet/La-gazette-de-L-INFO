@@ -38,7 +38,7 @@ if (isset($_POST['destinationURL'])) {
 
 
 if (isset($_POST['btnConnexion'])) {
-    $erreur = traitementConnexionL();//$destinationURL);
+    $erreur = traitementConnexionL($destinationURL);
 } else {
     $erreur = null;
 }
@@ -46,7 +46,7 @@ if (isset($_POST['btnConnexion'])) {
 // Génération de la page
 affEntete('Connexion');
 
-affFormulaireL($erreur);//, $destinationURL);
+affFormulaireL($erreur, $destinationURL);
 
 affPiedDePage();
 
@@ -70,7 +70,7 @@ ob_end_flush();
  *
  * @return void
  */
-function affFormulaireL(?bool $err): void {
+function affFormulaireL(?bool $err, string $destinationURL): void {
     // réaffichage des données soumises en cas d'erreur, sauf les mots de passe
     if (isset($_POST['btnConnexion'])){
         $values = htmlProtegerSorties($_POST);
@@ -97,10 +97,9 @@ function affFormulaireL(?bool $err): void {
     affLigneInput('Mot de passe :', array('type' => 'password', 'name' => 'passe', 'value' => '', 'required' => null));
 
     echo
+                    '<tr><td colspan="2"><input type="hidden" name="destinationURL" value="', $destinationURL, '"></td></tr>',
                     '<tr>',
                         '<td colspan="2">',
-                            // tr + td 
-                            // '<input type="hidden" name="destinationURL" value="', $destinationURL, '">',
                             '<input type="submit" name="btnConnexion" value="Se connecter"> ',
                             '<input type="reset" value="Annuler">',
                         '</td>',
@@ -128,8 +127,8 @@ function affFormulaireL(?bool $err): void {
  *
  *  @return bool    un booleen à true si il y a des erreurs, false sinon
  */
-function traitementConnexionL(): bool {
-    if( !parametresControle('post', ['pseudo', 'passe', 'btnConnexion'])) {
+function traitementConnexionL(string $destinationURL): bool {
+    if( !parametresControle('post', ['pseudo', 'passe', 'destinationURL', 'btnConnexion'])) {
         sessionExit();
     }
 
@@ -185,11 +184,11 @@ function traitementConnexionL(): bool {
     $_SESSION['redacteur'] = $redacteur; // utile pour l'affichage de la barre de navigation
 
     
-    // TODO: redirection vers la page de destination à faire fonctionner
-    // if (! empty($destinationURL)) {
-    //     header('Location: '. $destinationURL);
-    //     exit(); //===> Fin du script
-    // }
+    // Redirection vers la page de destination
+    if (! empty($destinationURL)) {
+        header('Location: '. $destinationURL);
+        exit(); //===> Fin du script
+    }
 
     header('Location: ../index.php');
     exit(); //===> Fin du script
