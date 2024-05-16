@@ -318,6 +318,7 @@ function affLigneInput(string $libelle, array $attributs = array(), string $pref
  * Chiffre et signe une valeur pour la passer dans une URL en utilisant l'algorithme AES-128 en mode CBC.
  *
  * @param string $val La valeur à chiffrer
+ * 
  * @return string La valeur chiffrée encodée URL
  */
 function chiffrerSignerURL(string $val) : string {
@@ -334,6 +335,7 @@ function chiffrerSignerURL(string $val) : string {
  * Déchiffre une valeur chiffrée avec la chiffrerSignerURL()
  *
  * @param string $x La valeur à déchiffrer
+ * 
  * @return string|false La valeur déchiffrée ou false si erreur
  */
 function dechiffrerSignerURL(string $x) : string|false {
@@ -420,8 +422,10 @@ function verifUpload(array &$erreurs): void {
 //_______________________________________________________________
 /**
  * Vérification du droit d'écriture sur le répertoire $uploadDir
+ * - Si le répertoire n'existe pas, on le créer
+ * - Si le répertoire n'est pas accessible en écriture, on le rend accessible
  *
- * @param   array   $erreurs    tableau associatif contenant les erreurs de saisie
+ * string  $uploadDir  répertoire de stockage des images
  * 
  * @return  void
  */
@@ -470,41 +474,42 @@ function verifGet(string $cle, string $page): int {
 
 //_______________________________________________________________
 /**
- * Redimensionnement de l'image et upload
+ * Redimensionnement de l'image (si besoin) et upload de celle-ci
  *
- * @param   array   $erreurs    tableau associatif contenant les erreurs de saisie
+ * @param   int     $ID         identifiant de l'article
+ * @param   string  $uploadDir  répertoire de stockage des images
  * 
  * @return  void
  */
 function depotFile(int $ID, string $uploadDir) {
-
-
-    // TODO: Redimensionne l'image, vous devez utiliser une bibliothèque de traitement d'image comme GD ou Imagick
     // Obtenir les dimensions de l'image
     $image = $_FILES['file']['tmp_name'];
     $image_info = getimagesize($image);
     $width_orig = $image_info[0];
     $height_orig = $image_info[1];
 
-    // Définir les nouvelles dimensions pour l'image redimensionnée
-    $new_width = 248; // Largeur souhaitée
-    $new_height = 186; // Hauteur souhaitée
+    // Définition des dimensions pour l'image redimensionnée
+    $new_width = 248; // Largeur
+    $new_height = 186; // Hauteur
 
-    // $image = imagecreatefromjpeg($image);
-    // // Créer une nouvelle image redimensionnée
-    // $new_image = imagecreatetruecolor($new_width, $new_height);
-    // imagecopyresampled($new_image, $image, 0, 0, 0, 0, $new_width, $new_height, $width_orig, $height_orig);
-
-
-    // Stockage de l'image
     $Dest = $uploadDir . $ID . '.jpg';
-    is_uploaded_file($image);
-    move_uploaded_file($image, $Dest);
-    
-    // imagejpeg($new_image, $Dest);
-    // Libérer la mémoire
-    // imagedestroy($image);
-    // imagedestroy($new_image);
+
+    if ($width_orig > $new_width) {
+        // redimensionner l'image et la stoker
+
+        $image = imagecreatefromjpeg($image);
+        // Créer une nouvelle image redimensionnée
+        $new_image = imagecreatetruecolor($new_width, $new_height);
+        imagecopyresampled($new_image, $image, 0, 0, 0, 0, $new_width, $new_height, $width_orig, $height_orig);
+        
+        imagejpeg($new_image, $Dest);
+        // Libérer la mémoire
+        imagedestroy($image);
+        imagedestroy($new_image);
+
+    } else {
+        // Stockage de l'image sans la redimensionner
+        is_uploaded_file($image);
+        move_uploaded_file($image, $Dest);
+    }
 }
-
-

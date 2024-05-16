@@ -75,6 +75,12 @@ function affContenuL(): void {
                        VALUES ('$pseudo', '$textCom', '$date', '$id')";
     
             bdSendRequest($bd, $sqlAdd);
+
+            
+            mysqli_close($bd);
+            // Redirection vers la page pour ne pas renvoyer le(s) formulaire(s) lors d'un raffraichissement de la page
+            $url = $_SERVER['REQUEST_URI'];
+            header("Location: $url");
         }
     }
 

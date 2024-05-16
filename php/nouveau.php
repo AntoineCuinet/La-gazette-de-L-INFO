@@ -80,7 +80,24 @@ function affContenuL(?array $err): void {
         echo        '</ul>',
                 '</div>';
         } else if (isset($_POST['btnCreerArticle'])) {
-            echo    '<div class="succes">L\'article à bien été créer.</div>';
+
+            // ouverture de la connexion à la base
+            $bd = bdConnect();
+            // Requête pour récupérer l'id de l'article créé
+            $sql = "SELECT arID FROM article 
+                    WHERE arAuteur = '{$_SESSION['pseudo']}'
+                    ORDER BY arDatePubli DESC
+                    LIMIT 1;";
+            $result = bdSendRequest($bd, $sql);
+
+            // fermeture de la connexion à la base de données
+            mysqli_close($bd);
+
+            $row = mysqli_fetch_assoc($result);
+            $id = $row['arID'];
+            // Chiffrement de l'id pour le passage dans l'URL
+            $id_chiffre = chiffrerSignerURL($id); 
+            echo    '<div class="succes">L\'article à bien été créer. <a href="./article.php?id=', $id_chiffre, '">cliquez ici pour le voir !</a></div>';
         }
 
         echo '<form method="post" action="nouveau.php" class="nouveau" enctype="multipart/form-data">',

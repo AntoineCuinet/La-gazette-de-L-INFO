@@ -119,7 +119,24 @@ function affContenuArticleL(?array &$err, int $id): void {
     echo        '</ul>',
             '</div>';
     } else if (isset($_POST['btnEditerArticle'])) {
-        echo    '<div class="succes">L\'article à bien été modifié.</div>';
+
+            // ouverture de la connexion à la base
+            $bd = bdConnect();
+            // Requête pour récupérer l'id de l'article créé
+            $sql = "SELECT arID FROM article 
+                    WHERE arAuteur = '{$_SESSION['pseudo']}'
+                    ORDER BY arDateModif DESC
+                    LIMIT 1;";
+            $result = bdSendRequest($bd, $sql);
+
+            // fermeture de la connexion à la base de données
+            mysqli_close($bd);
+
+            $row = mysqli_fetch_assoc($result);
+            $id = $row['arID'];
+            // Chiffrement de l'id pour le passage dans l'URL
+            $id_chiffre = chiffrerSignerURL($id); 
+            echo    '<div class="succes">L\'article à bien été modifié. <a href="./article.php?id=', $id_chiffre, '">cliquez ici pour le voir !</a></div>';
     }
 
     // chiffrement de l'id
@@ -266,10 +283,12 @@ function traitementSuppAr() {
     // Ouverture de la connexion à la base
     $bd = bdConnect();
     
-    // TODO: faire en cascade
+    // Requête SQL pour supprimer les commentaires de l'article
+    $sqlDelComments = "DELETE FROM commentaire WHERE coArticle = '$id'";
+    bdSendRequest($bd, $sqlDelComments);
+
     // Requête SQL pour supprimer le commentaire
     $sqlDel = "DELETE FROM article WHERE arID = '$id'";
-
     bdSendRequest($bd, $sqlDel);
 
     // Fermeture de la connexion à la base de données
